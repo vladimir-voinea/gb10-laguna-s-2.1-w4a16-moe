@@ -121,6 +121,23 @@ PROCESS_INSERT = """\
             layer.w2_weight_packed = torch.nn.Parameter(
                 torch.empty(0, dtype=torch.uint8, device=_dev), requires_grad=False
             )
+            # Free the STOCK SCALES too. repack_weights emits its own tiled copy,
+            # so keeping both duplicates ~150 MiB per layer -- about 7 GiB across
+            # 47 layers, taken straight out of the KV pool. Measured: model load
+            # 76.32 GiB against a 67 GB checkpoint, KV 479k tokens (1.83x at 262K)
+            # versus NVFP4's 794k (3.03x). Safe because apply() routes entirely to
+            # the custom kernel when the env is set; nothing reads these again.
+            layer.w13_weight_scale = torch.nn.Parameter(
+                torch.empty(0, dtype=_w1s.dtype, device=_dev), requires_grad=False
+            )
+            layer.w2_weight_scale = torch.nn.Parameter(
+                torch.empty(0, dtype=_w2s.dtype, device=_dev), requires_grad=False
+            )
+            # Hand the blocks back to the driver, not just to torch's caching
+            # allocator: vLLM sizes the KV cache from free DEVICE memory.
+            import gc as _gb10_gc
+            _gb10_gc.collect()
+            torch.cuda.empty_cache()
 """.format(guard=CUSTOM_GUARD)
 
 # Inserted at the top of apply() body, before the stock fused_experts import.
