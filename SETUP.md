@@ -86,7 +86,31 @@ wrong draft/target pairing.
 
 | symptom | cause |
 |---|---|
+| build succeeds but serving still uses Marlin | `--moe-backend triton` missing from the serve command (the baked patch is opt-in by design) |
 | `BLOCK_SIZE_K // group_size must be one of [1,2,4,8]` at M=1 | tuned config json missing — the vLLM default config is illegal for group-32 small-M |
 | `Using CompressedTensorsWNA16MarlinMoEMethod` in logs | `--moe-backend triton` missing |
 | tok/s ≈ half of expected, acceptance = 0 | wrong draft (see pin table — use the NVFP4 draft) |
 | docker `-v` of a single config json mounts a mangled filename | copy from a mounted dir instead (or use this image, which bakes them) |
+
+
+## Cluster deployment notes (from a real 5-node rollout)
+
+Things that bit us, so they don't bite you:
+
+- **Build the image per node.** `docker save`/`load` of a 19.8 GB image over
+  1 GbE is slower than rebuilding from the base each node (~40 s with a warm
+  base layer). The Dockerfile is deterministic; per-node builds are fine.
+- **Keep the container name, port and served-model names identical** to the
+  posture you are replacing. Load balancers, proxies, systemd units and
+  dashboards then need zero changes — the swap is a wrapper edit plus a
+  service restart.
+- **NFS holders**: the INT4 tree is ~67 GB. Export it read-only from the
+  holder and mount with `x-systemd.automount`; after adding the fstab line run
+  `systemctl daemon-reload` **and** `mount <path>` once, or the first engine
+  start bind-mounts an empty trigger directory.
+- **Verify by log line, not by "it started"**: `Using CompressedTensorsWNA16MoEMethod`
+  means the fast path; `...MarlinMoEMethod` means the flag did not take.
+- **Verify the drafter separately**: `spec_decode_num_accepted_tokens_total`
+  must be ~2.2× `num_drafts_total`. Zero accepted still serves — at half speed.
+- Roll node by node and keep the previous wrapper on disk; rollback is then a
+  wrapper swap and a restart, not a re-download.
