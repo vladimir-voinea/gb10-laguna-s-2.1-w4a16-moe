@@ -96,12 +96,13 @@ this fixed), memory is fully accounted for:
 
 ```
 Model loading took 69.71 GiB   =  67.0 (checkpoint) + 2.1 (draft) + ~0.6
-GPU KV cache size:  657,265 tokens   =  2.5x concurrency at 262K context
+GPU KV cache size:  639k-674k tokens  =  2.44x-2.57x at 262K context
 ```
 
-There is no remaining slack in this path — the loaded footprint equals the
-checkpoint plus the draft. If you need more KV, the levers are
-`--gpu-memory-utilization` and `--max-model-len`, not the kernel.
+Identical `69.71 GiB` on all five nodes; the KV spread is just per-node free
+memory. There is no remaining slack in this path — the loaded footprint equals
+the checkpoint plus the draft, so more KV means `--gpu-memory-utilization` or
+`--max-model-len`, not kernel work.
 
 ### Deployed
 
