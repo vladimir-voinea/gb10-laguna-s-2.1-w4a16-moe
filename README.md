@@ -76,6 +76,19 @@ With a working DFlash drafter (see below):
 | Marlin + drafter | 34.4 | 72.7 | 121.5 | 22.5 | — |
 | **custom + drafter** | **37.8** | **82.6** | **123.6** | 22.0 | **33.8** |
 
+### Full 5-node pool, through the production path
+
+Router → load balancer → 5 × GB10, 800-token decode, W4A16 + DFlash draft:
+
+| | c1 | c4 aggregate | c8 aggregate |
+|---|---|---|---|
+| coding | **40.5 tok/s** | **100.7** (34.9/stream) | **211.2** (29.6/stream) |
+| prose | 23.6 tok/s | 73.5 (21.8/stream) | 142.3 (18.5/stream) |
+
+Scaling holds: 8 concurrent streams still deliver 29.6 tok/s each — the kernel
+gets *more* efficient with batch (226-230 GB/s at M=16-64 vs 157 at M=1), so
+concurrency costs far less than the single-stream number suggests.
+
 ### Deployed
 
 Running the 5-node cluster this was developed on since 2026-07-26, replacing an
