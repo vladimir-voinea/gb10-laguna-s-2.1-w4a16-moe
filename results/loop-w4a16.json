@@ -1,0 +1,108 @@
+{
+  "A": {
+    "label": "A",
+    "runs": 12,
+    "looped": 0,
+    "loop_rate": 0.0,
+    "median_uniq": 1.0,
+    "median_trigram": 0.8905000000000001,
+    "rows": [
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.831,
+        "truncated": false,
+        "chars": 2072
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.909,
+        "truncated": false,
+        "chars": 1382
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.918,
+        "truncated": false,
+        "chars": 1243
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.883,
+        "truncated": false,
+        "chars": 590
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.946,
+        "truncated": false,
+        "chars": 577
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.986,
+        "truncated": false,
+        "chars": 482
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.826,
+        "truncated": false,
+        "chars": 720
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.878,
+        "truncated": false,
+        "chars": 507
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.874,
+        "truncated": false,
+        "chars": 844
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.963,
+        "truncated": false,
+        "chars": 846
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.898,
+        "truncated": false,
+        "chars": 1369
+      },
+      {
+        "looped": false,
+        "max_block_repeats": 1,
+        "uniq_line_ratio": 1.0,
+        "trigram_ratio": 0.8,
+        "truncated": false,
+        "chars": 643
+      }
+    ]
+  }
+}
