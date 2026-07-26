@@ -1,0 +1,347 @@
+device=NVIDIA GB10  E=256 K=3072 N=1024 topk=10 group=32 dtype=int4_w4a16  quick=True  M=[1, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 256, 512, 1024, 2048, 4096]
+building synthetic W4A16 weights …
+weights ready in 26.6s
+
+=== M=1  path=cuda  candidates=48 ===
+  [1/48] M1/N32/K32 g1 w4 s3  103.8 GB/s  p50=0.511 ms *best*
+  [2/48] M1/N32/K64 g1 w4 s3  112.5 GB/s  p50=0.472 ms *best*
+  [3/48] M1/N32/K128 g1 w4 s3  114.1 GB/s  p50=0.465 ms *best*
+  [4/48] M1/N32/K256 g1 w4 s3  111.9 GB/s  p50=0.474 ms
+  [5/48] M1/N64/K32 g1 w4 s3  114.6 GB/s  p50=0.463 ms *best*
+  [8/48] M1/N64/K256 g1 w4 s3  107.9 GB/s  p50=0.492 ms
+  [9/48] M1/N128/K32 g1 w4 s3  115.3 GB/s  p50=0.461 ms *best*
+  [12/48] M1/N128/K256 g1 w4 s3  107.4 GB/s  p50=0.494 ms
+  [13/48] M1/N256/K32 g1 w4 s3  116.5 GB/s  p50=0.456 ms *best*
+  [16/48] M1/N256/K256 g1 w4 s3  107.5 GB/s  p50=0.494 ms
+  [20/48] M16/N32/K256 g1 w4 s3  103.8 GB/s  p50=0.511 ms
+  [24/48] M16/N64/K256 g1 w4 s3  116.9 GB/s  p50=0.454 ms *best*
+  [25/48] M16/N128/K32 g1 w4 s3  118.2 GB/s  p50=0.449 ms *best*
+  [28/48] M16/N128/K256 g1 w4 s3  114.9 GB/s  p50=0.462 ms
+  [32/48] M16/N256/K256 g1 w4 s3  114.4 GB/s  p50=0.464 ms
+  [36/48] M32/N32/K256 g1 w4 s3  67.1 GB/s  p50=0.791 ms
+  [39/48] M32/N64/K128 g1 w4 s3  118.8 GB/s  p50=0.447 ms *best*
+  [40/48] M32/N64/K256 g1 w4 s3  103.4 GB/s  p50=0.513 ms
+  [44/48] M32/N128/K256 g1 w4 s3  118.2 GB/s  p50=0.449 ms
+  [45/48] M32/N256/K32 g1 w4 s3  119.6 GB/s  p50=0.444 ms *best*
+  [48/48] M32/N256/K256 g1 w4 s3  115.9 GB/s  p50=0.458 ms
+M=1 WINNER  119.6 GB/s  p50=0.444 ms  cfg={'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=2  path=cuda  candidates=48 ===
+  [1/48] M2/N32/K32 g1 w4 s3  99.2 GB/s  p50=1.070 ms *best*
+  [2/48] M2/N32/K64 g1 w4 s3  112.8 GB/s  p50=0.941 ms *best*
+  [3/48] M2/N32/K128 g1 w4 s3  120.8 GB/s  p50=0.879 ms *best*
+  [4/48] M2/N32/K256 g1 w4 s3  117.9 GB/s  p50=0.901 ms
+  [8/48] M2/N64/K256 g1 w4 s3  103.4 GB/s  p50=1.027 ms
+  [12/48] M2/N128/K256 g1 w4 s3  111.4 GB/s  p50=0.953 ms
+  [16/48] M2/N256/K256 g1 w4 s3  110.9 GB/s  p50=0.957 ms
+  [19/48] M16/N32/K128 g1 w4 s3  125.8 GB/s  p50=0.844 ms *best*
+  [20/48] M16/N32/K256 g1 w4 s3  113.7 GB/s  p50=0.934 ms
+  [24/48] M16/N64/K256 g1 w4 s3  107.9 GB/s  p50=0.984 ms
+  [28/48] M16/N128/K256 g1 w4 s3  121.3 GB/s  p50=0.875 ms
+  [32/48] M16/N256/K256 g1 w4 s3  119.1 GB/s  p50=0.891 ms
+  [36/48] M32/N32/K256 g1 w4 s3  70.1 GB/s  p50=1.515 ms
+  [39/48] M32/N64/K128 g1 w4 s3  128.4 GB/s  p50=0.827 ms *best*
+  [40/48] M32/N64/K256 g1 w4 s3  111.9 GB/s  p50=0.949 ms
+  [44/48] M32/N128/K256 g1 w4 s3  128.0 GB/s  p50=0.830 ms
+  [48/48] M32/N256/K256 g1 w4 s3  122.1 GB/s  p50=0.870 ms
+M=2 WINNER  128.4 GB/s  p50=0.827 ms  cfg={'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 128, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=4  path=cuda  candidates=48 ===
+  [1/48] M4/N32/K32 g1 w4 s3  63.5 GB/s  p50=3.175 ms *best*
+  [2/48] M4/N32/K64 g1 w4 s3  90.8 GB/s  p50=2.221 ms *best*
+  [3/48] M4/N32/K128 g1 w4 s3  104.3 GB/s  p50=1.934 ms *best*
+  [4/48] M4/N32/K256 g1 w4 s3  121.7 GB/s  p50=1.657 ms *best*
+  [8/48] M4/N64/K256 g1 w4 s3  115.5 GB/s  p50=1.746 ms
+  [12/48] M4/N128/K256 g1 w4 s3  107.9 GB/s  p50=1.870 ms
+  [16/48] M4/N256/K256 g1 w4 s3  108.0 GB/s  p50=1.868 ms
+  [20/48] M16/N32/K256 g1 w4 s3  115.3 GB/s  p50=1.749 ms
+  [24/48] M16/N64/K256 g1 w4 s3  124.6 GB/s  p50=1.619 ms *best*
+  [28/48] M16/N128/K256 g1 w4 s3  117.6 GB/s  p50=1.716 ms
+  [32/48] M16/N256/K256 g1 w4 s3  114.5 GB/s  p50=1.762 ms
+  [36/48] M32/N32/K256 g1 w4 s3  69.9 GB/s  p50=2.886 ms
+  [40/48] M32/N64/K256 g1 w4 s3  113.4 GB/s  p50=1.779 ms
+  [44/48] M32/N128/K256 g1 w4 s3  127.2 GB/s  p50=1.586 ms *best*
+  [48/48] M32/N256/K256 g1 w4 s3  113.5 GB/s  p50=1.778 ms
+M=4 WINNER  127.2 GB/s  p50=1.586 ms  cfg={'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=8  path=cuda  candidates=48 ===
+  [1/48] M8/N32/K32 g1 w4 s3  33.4 GB/s  p50=10.978 ms *best*
+  [2/48] M8/N32/K64 g1 w4 s3  67.4 GB/s  p50=5.437 ms *best*
+  [3/48] M8/N32/K128 g1 w4 s3  94.4 GB/s  p50=3.880 ms *best*
+  [4/48] M8/N32/K256 g1 w4 s3  117.8 GB/s  p50=3.109 ms *best*
+  [8/48] M8/N64/K256 g1 w4 s3  114.9 GB/s  p50=3.188 ms
+  [12/48] M8/N128/K256 g1 w4 s3  114.7 GB/s  p50=3.194 ms
+  [16/48] M8/N256/K256 g1 w4 s3  106.7 GB/s  p50=3.433 ms
+  [20/48] M16/N32/K256 g1 w4 s3  112.2 GB/s  p50=3.265 ms
+  [24/48] M16/N64/K256 g1 w4 s3  119.2 GB/s  p50=3.073 ms *best*
+  [28/48] M16/N128/K256 g1 w4 s3  114.9 GB/s  p50=3.188 ms
+  [32/48] M16/N256/K256 g1 w4 s3  114.1 GB/s  p50=3.210 ms
+  [36/48] M32/N32/K256 g1 w4 s3  68.1 GB/s  p50=5.376 ms
+  [40/48] M32/N64/K256 g1 w4 s3  108.2 GB/s  p50=3.386 ms
+  [44/48] M32/N128/K256 g1 w4 s3  117.6 GB/s  p50=3.114 ms
+  [48/48] M32/N256/K256 g1 w4 s3  116.2 GB/s  p50=3.151 ms
+M=8 WINNER  119.2 GB/s  p50=3.073 ms  cfg={'BLOCK_SIZE_M': 16, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=16  path=cuda  candidates=32 ===
+  [1/32] M16/N32/K32 g1 w4 s3  32.7 GB/s  p50=19.301 ms *best*
+  [2/32] M16/N32/K64 g1 w4 s3  69.3 GB/s  p50=9.119 ms *best*
+  [3/32] M16/N32/K128 g1 w4 s3  94.9 GB/s  p50=6.653 ms *best*
+  [4/32] M16/N32/K256 g1 w4 s3  109.6 GB/s  p50=5.763 ms *best*
+  [6/32] M16/N64/K64 g1 w4 s3  68.8 GB/s  p50=9.177 ms
+  [8/32] M16/N64/K256 g1 w4 s3  117.9 GB/s  p50=5.357 ms *best*
+  [9/32] M16/N128/K32 g1 w4 s3  30.8 GB/s  p50=20.514 ms
+  [12/32] M16/N128/K256 g1 w4 s3  112.5 GB/s  p50=5.617 ms
+  [15/32] M16/N256/K128 g1 w4 s3  90.0 GB/s  p50=7.016 ms
+  [18/32] M32/N32/K64 g1 w4 s3  69.6 GB/s  p50=9.076 ms
+  [21/32] M32/N64/K32 g1 w4 s3  33.9 GB/s  p50=18.637 ms
+  [24/32] M32/N64/K256 g1 w4 s3  103.8 GB/s  p50=6.085 ms
+  [27/32] M32/N128/K128 g1 w4 s3  89.5 GB/s  p50=7.055 ms
+  [28/32] M32/N128/K256 g1 w4 s3  119.4 GB/s  p50=5.292 ms *best*
+  [30/32] M32/N256/K64 g1 w4 s3  66.4 GB/s  p50=9.512 ms
+M=16 WINNER  119.4 GB/s  p50=5.292 ms  cfg={'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/32)
+
+=== M=24  path=cuda  candidates=48 ===
+  [1/48] M16/N32/K32 g1 w4 s3  32.5 GB/s  p50=24.644 ms *best*
+  [2/48] M16/N32/K64 g1 w4 s3  68.3 GB/s  p50=11.741 ms *best*
+  [3/48] M16/N32/K128 g1 w4 s3  95.1 GB/s  p50=8.426 ms *best*
+  [4/48] M16/N32/K256 g1 w4 s3  106.9 GB/s  p50=7.497 ms *best*
+  [8/48] M16/N64/K256 g1 w4 s3  117.6 GB/s  p50=6.815 ms *best*
+  [12/48] M16/N128/K256 g1 w4 s3  114.2 GB/s  p50=7.020 ms
+  [16/48] M16/N256/K256 g1 w4 s3  113.1 GB/s  p50=7.086 ms
+  [20/48] M32/N32/K256 g1 w4 s3  61.8 GB/s  p50=12.973 ms
+  [24/48] M32/N64/K256 g1 w4 s3  101.1 GB/s  p50=7.925 ms
+  [28/48] M32/N128/K256 g1 w4 s3  115.8 GB/s  p50=6.924 ms
+  [32/48] M32/N256/K256 g1 w4 s3  115.7 GB/s  p50=6.929 ms
+  [36/48] M64/N32/K256 g1 w4 s3  39.8 GB/s  p50=20.143 ms
+  [40/48] M64/N64/K256 g1 w4 s3  73.1 GB/s  p50=10.973 ms
+  [44/48] M64/N128/K256 g1 w4 s3  108.8 GB/s  p50=7.369 ms
+  [48/48] M64/N256/K256 g1 w4 s3  117.5 GB/s  p50=6.821 ms
+M=24 WINNER  117.6 GB/s  p50=6.815 ms  cfg={'BLOCK_SIZE_M': 16, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=32  path=cuda  candidates=48 ===
+  [1/48] M16/N32/K32 g1 w4 s3  32.3 GB/s  p50=30.427 ms *best*
+  [2/48] M16/N32/K64 g1 w4 s3  68.0 GB/s  p50=14.440 ms *best*
+  [3/48] M16/N32/K128 g1 w4 s3  95.0 GB/s  p50=10.332 ms *best*
+  [4/48] M16/N32/K256 g1 w4 s3  105.1 GB/s  p50=9.340 ms *best*
+  [8/48] M16/N64/K256 g1 w4 s3  116.2 GB/s  p50=8.454 ms *best*
+  [12/48] M16/N128/K256 g1 w4 s3  114.3 GB/s  p50=8.595 ms
+  [16/48] M16/N256/K256 g1 w4 s3  112.8 GB/s  p50=8.708 ms
+  [20/48] M32/N32/K256 g1 w4 s3  60.2 GB/s  p50=16.302 ms
+  [24/48] M32/N64/K256 g1 w4 s3  99.5 GB/s  p50=9.875 ms
+  [28/48] M32/N128/K256 g1 w4 s3  118.1 GB/s  p50=8.317 ms *best*
+  [32/48] M32/N256/K256 g1 w4 s3  113.2 GB/s  p50=8.679 ms
+  [36/48] M64/N32/K256 g1 w4 s3  38.9 GB/s  p50=25.276 ms
+  [40/48] M64/N64/K256 g1 w4 s3  71.5 GB/s  p50=13.732 ms
+  [44/48] M64/N128/K256 g1 w4 s3  107.6 GB/s  p50=9.131 ms
+  [48/48] M64/N256/K256 g1 w4 s3  117.6 GB/s  p50=8.354 ms
+M=32 WINNER  118.1 GB/s  p50=8.317 ms  cfg={'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=48  path=cuda  candidates=48 ===
+  [1/48] M16/N32/K32 g1 w4 s3  31.5 GB/s  p50=37.249 ms *best*
+  [2/48] M16/N32/K64 g1 w4 s3  65.0 GB/s  p50=18.059 ms *best*
+  [3/48] M16/N32/K128 g1 w4 s3  90.8 GB/s  p50=12.927 ms *best*
+  [4/48] M16/N32/K256 g1 w4 s3  97.9 GB/s  p50=11.983 ms *best*
+  [8/48] M16/N64/K256 g1 w4 s3  111.4 GB/s  p50=10.533 ms *best*
+  [12/48] M16/N128/K256 g1 w4 s3  107.5 GB/s  p50=10.914 ms
+  [16/48] M16/N256/K256 g1 w4 s3  109.1 GB/s  p50=10.752 ms
+  [20/48] M32/N32/K256 g1 w4 s3  55.6 GB/s  p50=21.094 ms
+  [24/48] M32/N64/K256 g1 w4 s3  93.9 GB/s  p50=12.497 ms
+  [28/48] M32/N128/K256 g1 w4 s3  113.6 GB/s  p50=10.331 ms *best*
+  [32/48] M32/N256/K256 g1 w4 s3  112.8 GB/s  p50=10.404 ms
+  [36/48] M64/N32/K256 g1 w4 s3  35.9 GB/s  p50=32.697 ms
+  [40/48] M64/N64/K256 g1 w4 s3  67.0 GB/s  p50=17.508 ms
+  [44/48] M64/N128/K256 g1 w4 s3  102.6 GB/s  p50=11.436 ms
+  [48/48] M64/N256/K256 g1 w4 s3  114.8 GB/s  p50=10.223 ms *best*
+M=48 WINNER  114.8 GB/s  p50=10.223 ms  cfg={'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=64  path=cuda  candidates=48 ===
+  [1/48] M16/N32/K32 g1 w4 s3  31.2 GB/s  p50=40.550 ms *best*
+  [2/48] M16/N32/K64 g1 w4 s3  64.4 GB/s  p50=19.610 ms *best*
+  [3/48] M16/N32/K128 g1 w4 s3  92.2 GB/s  p50=13.709 ms *best*
+  [4/48] M16/N32/K256 g1 w4 s3  91.8 GB/s  p50=13.762 ms
+  [8/48] M16/N64/K256 g1 w4 s3  110.9 GB/s  p50=11.389 ms *best*
+  [12/48] M16/N128/K256 g1 w4 s3  106.8 GB/s  p50=11.833 ms
+  [16/48] M16/N256/K256 g1 w4 s3  106.2 GB/s  p50=11.902 ms
+  [20/48] M32/N32/K256 g1 w4 s3  51.7 GB/s  p50=24.458 ms
+  [24/48] M32/N64/K256 g1 w4 s3  88.3 GB/s  p50=14.304 ms
+  [28/48] M32/N128/K256 g1 w4 s3  110.2 GB/s  p50=11.461 ms
+  [32/48] M32/N256/K256 g1 w4 s3  110.2 GB/s  p50=11.466 ms
+  [36/48] M64/N32/K256 g1 w4 s3  33.2 GB/s  p50=38.100 ms
+  [40/48] M64/N64/K256 g1 w4 s3  62.7 GB/s  p50=20.147 ms
+  [44/48] M64/N128/K256 g1 w4 s3  97.5 GB/s  p50=12.964 ms
+  [48/48] M64/N256/K256 g1 w4 s3  111.5 GB/s  p50=11.329 ms *best*
+M=64 WINNER  111.5 GB/s  p50=11.329 ms  cfg={'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=96  path=cuda  candidates=48 ===
+  [1/48] M16/N32/K32 g1 w4 s3  29.8 GB/s  p50=44.755 ms *best*
+  [2/48] M16/N32/K64 g1 w4 s3  60.5 GB/s  p50=22.014 ms *best*
+  [3/48] M16/N32/K128 g1 w4 s3  87.6 GB/s  p50=15.216 ms *best*
+  [4/48] M16/N32/K256 g1 w4 s3  80.4 GB/s  p50=16.567 ms
+  [8/48] M16/N64/K256 g1 w4 s3  103.2 GB/s  p50=12.912 ms *best*
+  [12/48] M16/N128/K256 g1 w4 s3  102.2 GB/s  p50=13.033 ms
+  [16/48] M16/N256/K256 g1 w4 s3  101.1 GB/s  p50=13.175 ms
+  [20/48] M32/N32/K256 g1 w4 s3  44.3 GB/s  p50=30.045 ms
+  [24/48] M32/N64/K256 g1 w4 s3  78.1 GB/s  p50=17.065 ms
+  [28/48] M32/N128/K256 g1 w4 s3  103.1 GB/s  p50=12.929 ms
+  [32/48] M32/N256/K256 g1 w4 s3  101.1 GB/s  p50=13.185 ms
+  [36/48] M64/N32/K256 g1 w4 s3  28.4 GB/s  p50=46.973 ms
+  [40/48] M64/N64/K256 g1 w4 s3  55.0 GB/s  p50=24.243 ms
+  [44/48] M64/N128/K256 g1 w4 s3  87.6 GB/s  p50=15.209 ms
+  [48/48] M64/N256/K256 g1 w4 s3  103.6 GB/s  p50=12.865 ms *best*
+M=96 WINNER  103.6 GB/s  p50=12.865 ms  cfg={'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=128  path=cuda  candidates=48 ===
+  [1/48] M16/N32/K32 g1 w4 s3  28.4 GB/s  p50=47.830 ms *best*
+  [2/48] M16/N32/K64 g1 w4 s3  57.2 GB/s  p50=23.753 ms *best*
+  [3/48] M16/N32/K128 g1 w4 s3  81.1 GB/s  p50=16.748 ms *best*
+  [4/48] M16/N32/K256 g1 w4 s3  70.1 GB/s  p50=19.393 ms
+  [8/48] M16/N64/K256 g1 w4 s3  94.7 GB/s  p50=14.354 ms *best*
+  [12/48] M16/N128/K256 g1 w4 s3  95.9 GB/s  p50=14.175 ms *best*
+  [16/48] M16/N256/K256 g1 w4 s3  94.3 GB/s  p50=14.408 ms
+  [20/48] M32/N32/K256 g1 w4 s3  38.0 GB/s  p50=35.734 ms
+  [24/48] M32/N64/K256 g1 w4 s3  69.1 GB/s  p50=19.678 ms
+  [28/48] M32/N128/K256 g1 w4 s3  94.0 GB/s  p50=14.450 ms
+  [32/48] M32/N256/K256 g1 w4 s3  95.3 GB/s  p50=14.264 ms
+  [36/48] M64/N32/K256 g1 w4 s3  24.6 GB/s  p50=55.153 ms
+  [40/48] M64/N64/K256 g1 w4 s3  48.5 GB/s  p50=28.013 ms
+  [44/48] M64/N128/K256 g1 w4 s3  78.3 GB/s  p50=17.359 ms
+  [48/48] M64/N256/K256 g1 w4 s3  95.4 GB/s  p50=14.248 ms
+M=128 WINNER  95.9 GB/s  p50=14.175 ms  cfg={'BLOCK_SIZE_M': 16, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}  (invalid=0/48)
+
+=== M=256  path=triton  candidates=576 ===
+  [1/576] M16/N32/K32 g1 w4 s2  117.9 GB/s  p50=11.525 ms *best*
+  [2/576] M16/N32/K32 g1 w4 s3  122.7 GB/s  p50=11.079 ms *best*
+  [3/576] M16/N32/K32 g1 w4 s4  123.0 GB/s  p50=11.045 ms *best*
+  [5/576] M16/N32/K32 g1 w8 s3  125.5 GB/s  p50=10.827 ms *best*
+  [6/576] M16/N32/K32 g1 w8 s4  126.1 GB/s  p50=10.780 ms *best*
+  [7/576] M16/N32/K32 g8 w4 s2  131.5 GB/s  p50=10.337 ms *best*
+  [27/576] M16/N32/K128 g1 w4 s4  133.7 GB/s  p50=10.161 ms *best*
+  [57/576] M16/N64/K32 g8 w4 s4  125.7 GB/s  p50=10.812 ms
+  [105/576] M16/N128/K32 g8 w4 s4  138.9 GB/s  p50=9.784 ms *best*
+  [114/576] M16/N128/K64 g1 w8 s4  106.5 GB/s  p50=12.754 ms
+  [171/576] M16/N256/K128 g1 w4 s4  2.6 GB/s  p50=521.967 ms
+  [228/576] M32/N32/K128 g8 w8 s4  89.6 GB/s  p50=15.168 ms
+  [285/576] M32/N64/K256 g8 w4 s4  20.3 GB/s  p50=66.877 ms
+  [297/576] M32/N128/K32 g8 w4 s4  140.2 GB/s  p50=9.695 ms *best*
+  [342/576] M32/N256/K32 g1 w8 s4  119.7 GB/s  p50=11.349 ms
+  [399/576] M64/N32/K64 g1 w4 s4  117.5 GB/s  p50=11.566 ms
+  [456/576] M64/N64/K64 g8 w8 s4  85.4 GB/s  p50=15.916 ms
+  [513/576] M64/N128/K128 g8 w4 s4  12.8 GB/s  p50=105.929 ms
+M=256 WINNER  140.2 GB/s  p50=9.695 ms  cfg={'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 4}  (invalid=60/576)
+
+=== M=512  path=triton  candidates=384 ===
+  [1/384] M32/N32/K32 g1 w4 s2  106.5 GB/s  p50=12.763 ms *best*
+  [2/384] M32/N32/K32 g1 w4 s3  116.2 GB/s  p50=11.693 ms *best*
+  [3/384] M32/N32/K32 g1 w4 s4  116.5 GB/s  p50=11.662 ms *best*
+  [5/384] M32/N32/K32 g1 w8 s3  118.0 GB/s  p50=11.520 ms *best*
+  [7/384] M32/N32/K32 g8 w4 s2  127.1 GB/s  p50=10.691 ms *best*
+  [26/384] M32/N32/K128 g1 w4 s3  128.1 GB/s  p50=10.608 ms *best*
+  [38/384] M32/N32/K256 g1 w4 s3  48.2 GB/s  p50=28.212 ms
+  [58/384] M32/N64/K32 g8 w8 s2  128.9 GB/s  p50=10.540 ms *best*
+  [76/384] M32/N64/K128 g1 w8 s2  93.6 GB/s  p50=14.520 ms
+  [104/384] M32/N128/K32 g8 w4 s3  134.1 GB/s  p50=10.135 ms *best*
+  [105/384] M32/N128/K32 g8 w4 s4  134.4 GB/s  p50=10.111 ms *best*
+  [114/384] M32/N128/K64 g1 w8 s4  106.8 GB/s  p50=12.729 ms
+  [152/384] M32/N256/K32 g8 w4 s3  43.6 GB/s  p50=31.177 ms
+  [228/384] M64/N32/K128 g8 w8 s4  78.9 GB/s  p50=17.217 ms
+  [266/384] M64/N64/K128 g1 w4 s3  38.2 GB/s  p50=35.571 ms
+  [304/384] M64/N128/K64 g1 w8 s2  81.1 GB/s  p50=16.755 ms
+  [342/384] M64/N256/K32 g1 w8 s4  99.0 GB/s  p50=13.728 ms
+M=512 WINNER  134.4 GB/s  p50=10.111 ms  cfg={'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 4}  (invalid=48/384)
+
+=== M=1024  path=triton  candidates=384 ===
+  [1/384] M32/N32/K32 g1 w4 s2  75.0 GB/s  p50=18.109 ms *best*
+  [2/384] M32/N32/K32 g1 w4 s3  79.0 GB/s  p50=17.192 ms *best*
+  [7/384] M32/N32/K32 g8 w4 s2  83.8 GB/s  p50=16.216 ms *best*
+  [38/384] M32/N32/K256 g1 w4 s3  28.8 GB/s  p50=47.155 ms
+  [55/384] M32/N64/K32 g8 w4 s2  85.2 GB/s  p50=15.941 ms *best*
+  [76/384] M32/N64/K128 g1 w8 s2  54.7 GB/s  p50=24.846 ms
+  [98/384] M32/N128/K32 g1 w4 s3  86.2 GB/s  p50=15.760 ms *best*
+  [99/384] M32/N128/K32 g1 w4 s4  87.0 GB/s  p50=15.619 ms *best*
+  [104/384] M32/N128/K32 g8 w4 s3  87.2 GB/s  p50=15.577 ms *best*
+  [105/384] M32/N128/K32 g8 w4 s4  87.3 GB/s  p50=15.567 ms *best*
+  [114/384] M32/N128/K64 g1 w8 s4  66.4 GB/s  p50=20.479 ms
+  [152/384] M32/N256/K32 g8 w4 s3  24.8 GB/s  p50=54.787 ms
+  [194/384] M64/N32/K32 g1 w4 s3  101.4 GB/s  p50=13.403 ms *best*
+  [199/384] M64/N32/K32 g8 w4 s2  108.5 GB/s  p50=12.522 ms *best*
+  [200/384] M64/N32/K32 g8 w4 s3  113.8 GB/s  p50=11.940 ms *best*
+  [228/384] M64/N32/K128 g8 w8 s4  76.4 GB/s  p50=17.777 ms
+  [247/384] M64/N64/K32 g8 w4 s2  119.5 GB/s  p50=11.371 ms *best*
+  [266/384] M64/N64/K128 g1 w4 s3  37.2 GB/s  p50=36.514 ms
+  [304/384] M64/N128/K64 g1 w8 s2  77.2 GB/s  p50=17.605 ms
+  [342/384] M64/N256/K32 g1 w8 s4  93.9 GB/s  p50=14.468 ms
+M=1024 WINNER  119.5 GB/s  p50=11.371 ms  cfg={'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 2}  (invalid=48/384)
+
+=== M=2048  path=triton  candidates=384 ===
+  [1/384] M32/N32/K32 g1 w4 s2  47.5 GB/s  p50=28.617 ms *best*
+  [2/384] M32/N32/K32 g1 w4 s3  50.4 GB/s  p50=26.954 ms *best*
+  [3/384] M32/N32/K32 g1 w4 s4  50.5 GB/s  p50=26.889 ms *best*
+  [7/384] M32/N32/K32 g8 w4 s2  52.9 GB/s  p50=25.701 ms *best*
+  [38/384] M32/N32/K256 g1 w4 s3  18.8 GB/s  p50=72.177 ms
+  [55/384] M32/N64/K32 g8 w4 s2  56.0 GB/s  p50=24.254 ms *best*
+  [76/384] M32/N64/K128 g1 w8 s2  35.1 GB/s  p50=38.739 ms
+  [98/384] M32/N128/K32 g1 w4 s3  57.4 GB/s  p50=23.684 ms *best*
+  [104/384] M32/N128/K32 g8 w4 s3  57.6 GB/s  p50=23.589 ms *best*
+  [114/384] M32/N128/K64 g1 w8 s4  42.3 GB/s  p50=32.164 ms
+  [152/384] M32/N256/K32 g8 w4 s3  16.3 GB/s  p50=83.226 ms
+  [194/384] M64/N32/K32 g1 w4 s3  63.5 GB/s  p50=21.389 ms *best*
+  [200/384] M64/N32/K32 g8 w4 s3  63.6 GB/s  p50=21.370 ms *best*
+  [206/384] M64/N32/K64 g1 w4 s3  65.9 GB/s  p50=20.607 ms *best*
+  [228/384] M64/N32/K128 g8 w8 s4  39.8 GB/s  p50=34.179 ms
+  [242/384] M64/N64/K32 g1 w4 s3  68.8 GB/s  p50=19.747 ms *best*
+  [247/384] M64/N64/K32 g8 w4 s2  71.2 GB/s  p50=19.088 ms *best*
+  [266/384] M64/N64/K128 g1 w4 s3  18.8 GB/s  p50=72.290 ms
+  [304/384] M64/N128/K64 g1 w8 s2  43.6 GB/s  p50=31.153 ms
+  [342/384] M64/N256/K32 g1 w8 s4  50.8 GB/s  p50=26.734 ms
+M=2048 WINNER  71.2 GB/s  p50=19.088 ms  cfg={'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 2}  (invalid=48/384)
+
+=== M=4096  path=triton  candidates=384 ===
+  [1/384] M32/N32/K32 g1 w4 s2  26.9 GB/s  p50=50.606 ms *best*
+  [2/384] M32/N32/K32 g1 w4 s3  27.6 GB/s  p50=49.171 ms *best*
+  [7/384] M32/N32/K32 g8 w4 s2  28.6 GB/s  p50=47.578 ms *best*
+  [38/384] M32/N32/K256 g1 w4 s3  10.7 GB/s  p50=127.416 ms
+  [49/384] M32/N64/K32 g1 w4 s2  28.7 GB/s  p50=47.343 ms *best*
+  [50/384] M32/N64/K32 g1 w4 s3  29.8 GB/s  p50=45.563 ms *best*
+  [55/384] M32/N64/K32 g8 w4 s2  31.4 GB/s  p50=43.251 ms *best*
+  [76/384] M32/N64/K128 g1 w8 s2  19.4 GB/s  p50=69.905 ms
+  [98/384] M32/N128/K32 g1 w4 s3  32.3 GB/s  p50=42.034 ms *best*
+  [114/384] M32/N128/K64 g1 w8 s4  24.2 GB/s  p50=56.149 ms
+  [152/384] M32/N256/K32 g8 w4 s3  9.4 GB/s  p50=144.740 ms
+  [194/384] M64/N32/K32 g1 w4 s3  36.1 GB/s  p50=37.645 ms *best*
+  [195/384] M64/N32/K32 g1 w4 s4  36.8 GB/s  p50=36.958 ms *best*
+  [198/384] M64/N32/K32 g1 w8 s4  37.1 GB/s  p50=36.634 ms *best*
+  [199/384] M64/N32/K32 g8 w4 s2  37.9 GB/s  p50=35.841 ms *best*
+  [206/384] M64/N32/K64 g1 w4 s3  42.6 GB/s  p50=31.898 ms *best*
+  [228/384] M64/N32/K128 g8 w8 s4  26.0 GB/s  p50=52.220 ms
+  [242/384] M64/N64/K32 g1 w4 s3  43.2 GB/s  p50=31.471 ms *best*
+  [243/384] M64/N64/K32 g1 w4 s4  44.1 GB/s  p50=30.782 ms *best*
+  [247/384] M64/N64/K32 g8 w4 s2  45.9 GB/s  p50=29.613 ms *best*
+  [266/384] M64/N64/K128 g1 w4 s3  12.1 GB/s  p50=111.955 ms
+  [304/384] M64/N128/K64 g1 w8 s2  28.1 GB/s  p50=48.303 ms
+  [342/384] M64/N256/K32 g1 w8 s4  34.1 GB/s  p50=39.857 ms
+M=4096 WINNER  45.9 GB/s  p50=29.613 ms  cfg={'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 2}  (invalid=48/384)
+
+correctness spot-check at M=16 with cfg={'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 256, 'GROUP_SIZE_M': 1, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3}
+correctness: pass=True  max_abs=0.0078125  rel_frob=0.009763927553997433  reason=None
+
+wrote /repo/configs/E=256,N=1024,device_name=NVIDIA_GB10,dtype=int4_w4a16.json
+wrote /repo/configs/NOTES-gb10.md
+wrote /repo/configs/E=256,N=1024,device_name=NVIDIA_GB10,dtype=int4_w4a16.metrics.json
+
+     M       GB/s    %roof   path  config
+     1      119.6     43.8   cuda  M32/N256/K32 g1 w4 s3
+     2      128.4     47.0   cuda  M32/N64/K128 g1 w4 s3
+     4      127.2     46.6   cuda  M32/N128/K256 g1 w4 s3
+     8      119.2     43.7   cuda  M16/N64/K256 g1 w4 s3
+    16      119.4     43.7   cuda  M32/N128/K256 g1 w4 s3
+    24      117.6     43.1   cuda  M16/N64/K256 g1 w4 s3
+    32      118.1     43.3   cuda  M32/N128/K256 g1 w4 s3
+    48      114.8     42.0   cuda  M64/N256/K256 g1 w4 s3
+    64      111.5     40.8   cuda  M64/N256/K256 g1 w4 s3
+    96      103.6     37.9   cuda  M64/N256/K256 g1 w4 s3
+   128       95.9     35.1   cuda  M16/N128/K256 g1 w4 s3
+   256      140.2     51.3 triton  M32/N128/K32 g8 w4 s4
+   512      134.4     49.2 triton  M32/N128/K32 g8 w4 s4
+  1024      119.5     43.8 triton  M64/N64/K32 g8 w4 s2
+  2048       71.2     26.1 triton  M64/N64/K32 g8 w4 s2
+  4096       45.9     16.8 triton  M64/N64/K32 g8 w4 s2

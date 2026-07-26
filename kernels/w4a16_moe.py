@@ -122,8 +122,66 @@ def is_repacked(w_q: torch.Tensor) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Routing: expert-sorted block assignment (graph-friendly, pure torch)
+# Routing: expert-sorted block assignment (CUDA-graph capturable, pure torch)
 # ---------------------------------------------------------------------------
+# Host→device traps that break torch.cuda.graph capture (unpinned H2D):
+#   - torch.bincount: CUDA impl does input.max().item() to size the histogram
+#   - torch.tensor(scalar/list, device=cuda): constructs on CPU then copies
+#   - torch.arange(n).to(device) / CPU tensor .to(device)
+#   - indexing a CUDA tensor with a CPU index tensor
+# Steady-state path: only GPU ops + pre-allocated device buffers (no H2D).
+
+# (device_str, n_tok, num_experts, block_size) → workspace tensors
+_ALIGN_CACHE: dict[tuple, dict[str, torch.Tensor | int]] = {}
+
+# (device_str, M, topk, N, K, dtype) → intermediate / partial / out
+_WS_CACHE: dict[tuple, dict[str, torch.Tensor]] = {}
+
+
+def _align_workspace(
+    device: torch.device,
+    n_tok: int,
+    num_experts: int,
+    block_size: int,
+) -> dict[str, torch.Tensor | int]:
+    """Pre-allocate align buffers once per (device, shape); reuse every call."""
+    key = (str(device), n_tok, num_experts, block_size)
+    cached = _ALIGN_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    max_num_tokens_padded = n_tok + num_experts * (block_size - 1)
+    max_num_tokens_padded = (
+        (max_num_tokens_padded + block_size - 1) // block_size * block_size
+    )
+    max_num_m_blocks = max_num_tokens_padded // block_size
+
+    # All tensors born on ``device`` — never CPU-then-.to(device).
+    ws: dict[str, torch.Tensor | int] = {
+        "sorted_token_ids": torch.empty(
+            max_num_tokens_padded, dtype=torch.int32, device=device
+        ),
+        "expert_ids": torch.empty(
+            max_num_m_blocks, dtype=torch.int32, device=device
+        ),
+        "num_post": torch.empty(1, dtype=torch.int32, device=device),
+        "counts": torch.empty(num_experts, dtype=torch.int32, device=device),
+        "offsets": torch.empty(num_experts + 1, dtype=torch.int32, device=device),
+        "exp_first": torch.empty(num_experts, dtype=torch.int32, device=device),
+        "ones": torch.ones(max(n_tok, 1), dtype=torch.int32, device=device),
+        "arange_tok": (
+            torch.arange(n_tok, device=device, dtype=torch.int32)
+            if n_tok > 0
+            else torch.empty(0, dtype=torch.int32, device=device)
+        ),
+        "block_tok0": torch.arange(max_num_m_blocks, device=device, dtype=torch.int32)
+        * block_size,
+        "n_tok": n_tok,
+        "max_num_tokens_padded": max_num_tokens_padded,
+        "max_num_m_blocks": max_num_m_blocks,
+    }
+    _ALIGN_CACHE[key] = ws
+    return ws
 
 
 def moe_align_block_size(
@@ -133,10 +191,13 @@ def moe_align_block_size(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Sort tokens by expert and pad each expert to a multiple of ``block_size``.
 
+    Fully CUDA-graph capturable: no host sync, no H2D, fixed buffer sizes from
+    ``(M, topk, E, block_size)`` only (not from routing values).
+
     Parameters
     ----------
     topk_ids:
-        ``[M, topk]`` int32 expert indices.
+        ``[M, topk]`` int32 expert indices (must already live on the GPU).
     block_size:
         CTA token tile (``BLOCK_M``).
     num_experts:
@@ -153,60 +214,106 @@ def moe_align_block_size(
         Scalar length of the valid (possibly padded) sorted region.
     """
     device = topk_ids.device
+    assert topk_ids.is_cuda, "topk_ids must be on CUDA for graph capture"
     M, topk = topk_ids.shape
     n_tok = M * topk
-    experts = topk_ids.reshape(-1).to(torch.int32)
 
-    max_num_tokens_padded = n_tok + num_experts * (block_size - 1)
-    max_num_tokens_padded = (
-        (max_num_tokens_padded + block_size - 1) // block_size * block_size
-    )
-    max_num_m_blocks = max_num_tokens_padded // block_size
+    ws = _align_workspace(device, n_tok, num_experts, block_size)
+    sorted_token_ids = ws["sorted_token_ids"]  # type: ignore[assignment]
+    expert_ids = ws["expert_ids"]  # type: ignore[assignment]
+    num_post = ws["num_post"]  # type: ignore[assignment]
+    assert isinstance(sorted_token_ids, torch.Tensor)
+    assert isinstance(expert_ids, torch.Tensor)
+    assert isinstance(num_post, torch.Tensor)
 
-    sorted_token_ids = torch.full(
-        (max_num_tokens_padded,), n_tok, dtype=torch.int32, device=device
-    )
-    expert_ids = torch.full(
-        (max_num_m_blocks,), -1, dtype=torch.int32, device=device
-    )
+    # Device-side fills (Python int fill values — no tensor H2D).
+    sorted_token_ids.fill_(n_tok)
+    expert_ids.fill_(-1)
 
     if n_tok == 0:
-        return (
-            sorted_token_ids,
-            expert_ids,
-            torch.zeros(1, dtype=torch.int32, device=device),
-        )
+        num_post.fill_(0)
+        return sorted_token_ids, expert_ids, num_post
 
-    counts = torch.bincount(experts.long(), minlength=num_experts).to(torch.int32)
-    blocks_per = (counts + block_size - 1) // block_size
+    # Dtype cast only (stays on device). Never .to(device) from host data.
+    experts = topk_ids.reshape(-1)
+    if experts.dtype != torch.int32:
+        experts = experts.to(torch.int32)
+    experts_i64 = experts.to(torch.int64)
+
+    # Histogram without bincount (bincount does max().item() → D2H under capture).
+    counts = ws["counts"]
+    assert isinstance(counts, torch.Tensor)
+    counts.fill_(0)
+    ones = ws["ones"]
+    assert isinstance(ones, torch.Tensor)
+    counts.scatter_add_(0, experts_i64, ones[:n_tok])
+
+    blocks_per = (counts + (block_size - 1)) // block_size
     tokens_pad_per = blocks_per * block_size
 
-    offsets = torch.zeros(num_experts + 1, dtype=torch.int32, device=device)
-    offsets[1:] = torch.cumsum(tokens_pad_per, dim=0)
-    num_post_scalar = offsets[-1]
-    num_post = num_post_scalar.reshape(1).to(torch.int32)
+    offsets = ws["offsets"]
+    assert isinstance(offsets, torch.Tensor)
+    offsets.fill_(0)
+    # Device-only prefix sum. Explicit dtype avoids int64 promotion then H2D-looking casts.
+    cs = torch.cumsum(tokens_pad_per, dim=0, dtype=torch.int32)
+    offsets[1:].copy_(cs)
+    # num_post is a standalone 1-vector (not a view into offsets) for stable ptrs.
+    num_post.copy_(offsets[-1:])
 
     sorted_expert, order = torch.sort(experts, stable=True)
     order_i32 = order.to(torch.int32)
+    sorted_expert_i64 = sorted_expert.to(torch.int64)
 
-    arange = torch.arange(n_tok, device=device, dtype=torch.int32)
-    exp_first = torch.full((num_experts,), n_tok, dtype=torch.int32, device=device)
+    arange = ws["arange_tok"]
+    exp_first = ws["exp_first"]
+    assert isinstance(arange, torch.Tensor)
+    assert isinstance(exp_first, torch.Tensor)
+    exp_first.fill_(n_tok)
     exp_first.scatter_reduce_(
-        0, sorted_expert.long(), arange, reduce="amin", include_self=True
+        0, sorted_expert_i64, arange, reduce="amin", include_self=True
     )
-    rank = arange - exp_first[sorted_expert.long()]
-    dest = offsets[sorted_expert.long()] + rank
-    sorted_token_ids[dest.long()] = order_i32
+    rank = arange - exp_first[sorted_expert_i64]
+    dest = offsets[sorted_expert_i64] + rank
+    # Integer index_put on device tensors only (GPU indices → no H2D).
+    sorted_token_ids[dest.to(torch.int64)] = order_i32
 
-    block_idx = torch.arange(max_num_m_blocks, device=device, dtype=torch.int32)
-    block_tok0 = block_idx * block_size
-    e_for_block = torch.searchsorted(
-        offsets[1:].contiguous(), block_tok0, right=True
-    ).to(torch.int32)
-    valid = block_tok0 < num_post_scalar
-    expert_ids = torch.where(valid, e_for_block, torch.full_like(e_for_block, -1))
+    block_tok0 = ws["block_tok0"]
+    assert isinstance(block_tok0, torch.Tensor)
+    # searchsorted is pure-device; right=True → expert e owns [off[e], off[e+1]).
+    e_for_block = torch.searchsorted(offsets[1:], block_tok0, right=True).to(
+        torch.int32
+    )
+    valid = block_tok0 < offsets[-1]
+    expert_ids.copy_(e_for_block)
+    expert_ids.masked_fill_(~valid, -1)
 
     return sorted_token_ids, expert_ids, num_post
+
+
+def _gemm_workspace(
+    device: torch.device,
+    dtype: torch.dtype,
+    M: int,
+    topk: int,
+    N: int,
+    K: int,
+) -> dict[str, torch.Tensor]:
+    """Reuse GEMM scratch buffers across calls (stable device pointers for capture).
+
+    Returned activations are allocated (or cast) per call so callers can retain
+    references; only internal scratch is pooled.
+    """
+    key = (str(device), M, topk, N, K, str(dtype))
+    cached = _WS_CACHE.get(key)
+    if cached is None:
+        cached = {
+            "intermediate": torch.empty((M, topk, N), device=device, dtype=dtype),
+            "partial": torch.empty((M, topk, K), device=device, dtype=dtype),
+            # fp32 accumulation target for the tiny-M atomic-add path
+            "out_f32": torch.empty((M, K), device=device, dtype=torch.float32),
+        }
+        _WS_CACHE[key] = cached
+    return cached
 
 
 # ---------------------------------------------------------------------------
@@ -425,11 +532,17 @@ def _w4a16_moe_w2_kernel(
     group_size: tl.constexpr,
     top_k: tl.constexpr,
     MUL_ROUTED_WEIGHT: tl.constexpr,
+    ATOMIC_ADD_OUT: tl.constexpr,
     BLOCK_SIZE_M: tl.constexpr,
     BLOCK_SIZE_N: tl.constexpr,
     BLOCK_SIZE_K: tl.constexpr,
 ):
-    """w2 GEMM: intermediate ``[N]`` → hidden ``[K]``, optional router mul."""
+    """w2 GEMM: intermediate ``[N]`` → hidden ``[K]``, optional router mul.
+
+    When ``ATOMIC_ADD_OUT`` is set, ``c_ptr`` is ``[M, K]`` and topk
+    contributions are accumulated with ``tl.atomic_add`` (fp32 buffer), so the
+    separate moe_sum launch can be skipped at tiny M.
+    """
     pid = tl.program_id(axis=0)
     num_pid_n = n_tiles_k
     pid_m = pid // num_pid_n
@@ -498,16 +611,27 @@ def _w4a16_moe_w2_kernel(
         ).to(tl.float32)
         acc = acc * w[:, None]
 
-    out = acc.to(tl.bfloat16)
     k_global = pid_n * BLOCK_SIZE_N + offs_n_out
-    c_ptrs = (
-        c_ptr
-        + token_index[:, None] * stride_cm
-        + slot[:, None] * stride_ct
-        + k_global[None, :] * stride_ck
-    )
     k_mask = k_global[None, :] < K
-    tl.store(c_ptrs, out, mask=token_mask[:, None] & k_mask)
+    store_mask = token_mask[:, None] & k_mask
+
+    if ATOMIC_ADD_OUT:
+        # c: [M, K] fp32 — accumulate topk expert contributions in-place.
+        c_ptrs = (
+            c_ptr
+            + token_index[:, None] * stride_cm
+            + k_global[None, :] * stride_ck
+        )
+        tl.atomic_add(c_ptrs, acc, mask=store_mask)
+    else:
+        out = acc.to(tl.bfloat16)
+        c_ptrs = (
+            c_ptr
+            + token_index[:, None] * stride_cm
+            + slot[:, None] * stride_ct
+            + k_global[None, :] * stride_ck
+        )
+        tl.store(c_ptrs, out, mask=store_mask)
 
 
 @triton.jit
@@ -590,6 +714,7 @@ def fused_experts_w4a16(
         ``[M, K]`` bf16, same layout as ``hidden``.
     """
     assert hidden.is_cuda and hidden.ndim == 2
+    assert topk_ids.is_cuda and topk_weights.is_cuda
     assert topk_ids.shape == topk_weights.shape
     assert block_k % group_size == 0 and block_k % 2 == 0
 
@@ -600,6 +725,8 @@ def fused_experts_w4a16(
     assert dtype == torch.bfloat16, "bf16 activations required"
 
     # ---- ensure repacked layout (cheap no-op if already 4-D) ----
+    # Must NOT run under CUDA-graph capture (alloc + gather). Bench/integration
+    # repack once outside the timed/captured region.
     if not is_repacked(w1_q):
         w1_q, w1_scale = repack_weights(w1_q, w1_scale, block_n=block_n)
     if not is_repacked(w2_q):
@@ -630,9 +757,13 @@ def fused_experts_w4a16(
     # Static grid (CUDA-graph safe): use allocated max; kernel early-exits on pad.
     EM_grid = sorted_token_ids.shape[0]
 
-    intermediate = torch.empty((M, topk, N), device=device, dtype=dtype)
-    partial = torch.empty((M, topk, K), device=device, dtype=dtype)
-    out = torch.empty((M, K), device=device, dtype=dtype)
+    ws = _gemm_workspace(device, dtype, M, topk, N, K)
+    intermediate = ws["intermediate"]
+    partial = ws["partial"]
+
+    # Tiny-M: fold topk-sum into w2 via fp32 atomics (drop the 3rd launch).
+    # At M>=16 the partial+sum path is cheaper than atomic contention.
+    use_atomic_sum = M <= 4
 
     # ---- w1 + fused silu-and-mul ----
     grid_w1 = (triton.cdiv(EM_grid, block_m) * n_tiles_half,)
@@ -671,8 +802,52 @@ def fused_experts_w4a16(
     )
 
     # ---- w2 (tiles over output K; mask beyond K if padded) ----
-    # Grid uses n_tiles_k so it matches repacked tiles exactly.
     grid_w2 = (triton.cdiv(EM_grid, block_m) * n_tiles_k,)
+    if use_atomic_sum:
+        out_f32 = ws["out_f32"]
+        out_f32.zero_()  # device memset — graph-safe
+        _w4a16_moe_w2_kernel[grid_w2](
+            intermediate,
+            w2_q,
+            w2_scale,
+            out_f32,
+            topk_weights,
+            sorted_token_ids,
+            expert_ids,
+            num_tokens_post_padded,
+            N,
+            K,
+            num_valid_tokens,
+            n_tiles_k,
+            intermediate.stride(0),
+            intermediate.stride(1),
+            intermediate.stride(2),
+            w2_q.stride(0),
+            w2_q.stride(1),
+            w2_q.stride(2),
+            w2_q.stride(3),
+            w2_scale.stride(0),
+            w2_scale.stride(1),
+            w2_scale.stride(2),
+            w2_scale.stride(3),
+            out_f32.stride(0),
+            0,  # no topk slot stride when writing [M, K]
+            out_f32.stride(1),
+            topk_weights.stride(0),
+            topk_weights.stride(1) if topk_weights.ndim == 2 else 0,
+            group_size=group_size,
+            top_k=topk,
+            MUL_ROUTED_WEIGHT=True,
+            ATOMIC_ADD_OUT=True,
+            BLOCK_SIZE_M=block_m,
+            BLOCK_SIZE_N=block_n,
+            BLOCK_SIZE_K=block_k,
+            num_warps=4,
+            num_stages=2,
+        )
+        # Device cast (graph-safe). New tensor so callers can retain the result.
+        return out_f32.to(dtype=dtype)
+
     _w4a16_moe_w2_kernel[grid_w2](
         intermediate,
         w2_q,
@@ -705,6 +880,7 @@ def fused_experts_w4a16(
         group_size=group_size,
         top_k=topk,
         MUL_ROUTED_WEIGHT=True,
+        ATOMIC_ADD_OUT=False,
         BLOCK_SIZE_M=block_m,
         BLOCK_SIZE_N=block_n,
         BLOCK_SIZE_K=block_k,
@@ -713,6 +889,7 @@ def fused_experts_w4a16(
     )
 
     # ---- sum over topk ----
+    out = torch.empty((M, K), device=device, dtype=dtype)
     sum_block = 128
     grid_sum = (M, triton.cdiv(K, sum_block))
     _moe_sum_kernel[grid_sum](
