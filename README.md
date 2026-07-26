@@ -89,6 +89,20 @@ Scaling holds: 8 concurrent streams still deliver 29.6 tok/s each — the kernel
 gets *more* efficient with batch (226-230 GB/s at M=16-64 vs 157 at M=1), so
 concurrency costs far less than the single-stream number suggests.
 
+### Per-node capacity
+
+After the repack frees the stock scales (see the commit log for the 7 GiB bug
+this fixed), memory is fully accounted for:
+
+```
+Model loading took 69.71 GiB   =  67.0 (checkpoint) + 2.1 (draft) + ~0.6
+GPU KV cache size:  657,265 tokens   =  2.5x concurrency at 262K context
+```
+
+There is no remaining slack in this path — the loaded footprint equals the
+checkpoint plus the draft. If you need more KV, the levers are
+`--gpu-memory-utilization` and `--max-model-len`, not the kernel.
+
 ### Deployed
 
 Running the 5-node cluster this was developed on since 2026-07-26, replacing an
