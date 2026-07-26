@@ -43,7 +43,57 @@ achieved weight-bandwidth so progress is judged against the roofline, not vibes.
 
 ## Results
 
-(populated as the work lands)
+GB10 (DGX Spark, sm_121a, ~273 GB/s LPDDR5X), 117B-class MoE (256 experts,
+top-10, 3072 hidden / 1024 intermediate), int4 group-32 symmetric experts,
+bf16 everything else. All numbers measured on real hardware.
+
+### Kernel microbench (CUDA-graph timing, achieved weight-bandwidth GB/s)
+
+| M | stock triton (default cfg) | stock triton (tuned cfg) | **this repo's kernel** |
+|---|---|---|---|
+| 1 | **crash** (illegal cfg for group-32) | 131 | **157** |
+| 4 | 111 | 133 | **205** |
+| 16 | 116 | 124 | **226** |
+| 64 | 112 | 116 | **230** |
+| 256 | 128 | 142 | **223** |
+| 1024 | 109 | 120 | **145** |
+| 4096 | 45 | 45 | 44 (compute-bound prefill, parity) |
+
+### End-to-end, single node, 800-token decode (vLLM 0.25.1, cudagraphs on)
+
+Spec-off:
+
+| path | coding c1 | prose c1 |
+|---|---|---|
+| Marlin WNA16 MoE (stock default) | 19.6 | 19.5 |
+| stock triton + tuned configs | 16.9 | 16.8 |
+| **custom kernel** (`apply.py --custom`) | 18.7 | 18.7 |
+
+With a working DFlash drafter (see below):
+
+| path | coding c1 | coding c4 agg | coding c8 agg | prose c1 | coding c1 @28K-token prompt |
+|---|---|---|---|---|---|
+| Marlin + drafter | 34.4 | 72.7 | 121.5 | 22.5 | — |
+| **custom + drafter** | **37.8** | **82.6** | **123.6** | 22.0 | **33.8** |
+
+### The two findings that mattered
+
+1. **"Marlin is 4× too slow" was a misdiagnosis.** The historical 10.8 tok/s
+   was measured with a speculative-decoding draft whose target weights had
+   been replaced upstream — **0 of 22,372 draft tokens accepted**, and the
+   wasted draft work halved throughput. Marlin spec-off does 19.6. The actual
+   kernel gap on GB10 is ~1.5× (effective ~150–187 GB/s vs this repo's
+   205–230), not 4×.
+2. **Cross-quant draft pairing works.** A draft trained against the shared
+   BF16 base pairs fine with a differently-quantized target: the NVFP4 DFlash
+   draft accepts 2.25 tokens/window against the INT4 target (its own INT4
+   draft, from an older weight snapshot, accepts none). That one swap is
+   worth ~1.8× end-to-end.
+
+Known weak leg: large-M prefill (~44 GB/s — compute-bound through dequant +
+bf16 tensor cores; NVFP4's native FP4 path keeps a structural prefill edge).
+A fused single-launch tiny-M variant was tried and measured **worse**
+(2.16 ms vs 0.34 ms at M=1) — the multi-launch structure with graphs wins.
 
 ## Running
 
