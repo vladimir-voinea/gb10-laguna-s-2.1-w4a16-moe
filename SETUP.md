@@ -7,7 +7,7 @@ Substituting newer revisions may work but is not what was measured.
 
 | component | pin |
 |---|---|
-| this repo | tag `v0.1` (validated at commit `d8bf94b`, kernels unchanged since `0e4b688`) |
+| this repo | tag **`v0.2`** — includes the repack scales fix (v0.1 loses ~7 GiB of KV pool). Kernels unchanged since `0e4b688`. |
 | vLLM | 0.25.1 (inside the base image) |
 | base docker image | any vLLM 0.25.1 image with triton + sm_121a; validated against a local build (`vllm-laguna-nvfp4:v0.25.1`, image id `6130ea047629`); public equivalent `vllm/vllm-openai:v0.25.1` |
 | target checkpoint | `poolside/Laguna-S-2.1-INT4` @ revision **`67dbeda456e68139f281c40831f9d12049d8fc11`** |
@@ -77,8 +77,11 @@ python3 bench/e2e_tps.py --url http://localhost:8000/v1 --model laguna-w4a16 \
   --runs 2 --max-tokens 800
 ```
 
-Expected on a GB10 (single stream, 800-token decode): **~35–38 tok/s coding,
-~22 tok/s prose**; c8 aggregate ~120 tok/s. If you see ~19 spec-off-level
+Expected on a GB10 (single stream, 800-token decode): **~35–40 tok/s coding,
+~22 tok/s prose**; c8 aggregate ~120 tok/s single-node (~210 across a 5-node
+pool). Also check capacity — `Model loading took` should equal your checkpoint
+plus the draft (~69.7 GiB for this pair). If it is several GiB higher you are
+on v0.1, which keeps the stock scales alongside the repacked ones. If you see ~19 spec-off-level
 numbers, check #2 (drafter). If you see ~11, the drafter is accepting 0% —
 wrong draft/target pairing.
 
