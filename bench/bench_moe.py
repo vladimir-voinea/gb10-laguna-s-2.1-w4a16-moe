@@ -417,10 +417,53 @@ def run_marlin(
         raise RuntimeError(f"fused_marlin_moe failed: {exc}") from exc
 
 
+# ---------------------------------------------------------------------------
+# Custom GB10 kernel (kernels/w4a16_moe.py) — repack once outside timed region
+# ---------------------------------------------------------------------------
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+# Cache repacked weights keyed by id(MoEWeights) so make_weights output is
+# transformed once per process; the timed path only launches the kernel.
+_custom_repack_cache: dict[int, tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]] = {}
+
+
+def run_custom(
+    hidden: torch.Tensor,
+    weights: MoEWeights,
+    topk_weights: torch.Tensor,
+    topk_ids: torch.Tensor,
+) -> torch.Tensor:
+    """Custom Triton W4A16 MoE (kernels/w4a16_moe). Repack is cached, not timed."""
+    from kernels.w4a16_moe import fused_experts_w4a16, repack_weights
+
+    key = id(weights)
+    packed = _custom_repack_cache.get(key)
+    if packed is None:
+        w1_q_r, w1_s_r = repack_weights(weights.w1_q, weights.w1_scale)
+        w2_q_r, w2_s_r = repack_weights(weights.w2_q, weights.w2_scale)
+        packed = (w1_q_r, w1_s_r, w2_q_r, w2_s_r)
+        _custom_repack_cache[key] = packed
+    w1_q_r, w1_s_r, w2_q_r, w2_s_r = packed
+    return fused_experts_w4a16(
+        hidden,
+        w1_q_r,
+        w2_q_r,
+        w1_s_r,
+        w2_s_r,
+        topk_weights,
+        topk_ids,
+        group_size=weights.group_size,
+    )
+
+
 BACKENDS: dict[str, Callable[..., torch.Tensor]] = {
     "reference": run_reference,
     "triton": run_triton,
     "marlin": run_marlin,
+    "custom": run_custom,
 }
 
 
@@ -429,18 +472,40 @@ BACKENDS: dict[str, Callable[..., torch.Tensor]] = {
 # ---------------------------------------------------------------------------
 
 
-def cuda_time_ms(fn: Callable[[], Any], warmup: int, iters: int) -> list[float]:
-    """Return per-iter latencies in ms via CUDA events."""
+def cuda_time_ms(
+    fn: Callable[[], Any], warmup: int, iters: int, use_cudagraph: bool = False
+) -> list[float]:
+    """Return per-iter latencies in ms via CUDA events.
+
+    use_cudagraph captures fn once and replays the graph — this is what serving
+    actually measures (vLLM decodes under CUDA graphs), so kernel-launch and
+    python dispatch overhead vanish and only device time remains. Small-M
+    numbers without it are dominated by the 3-launch MoE structure and unfairly
+    condemn the kernel.
+    """
     for _ in range(warmup):
         fn()
     torch.cuda.synchronize()
+
+    replay: Callable[[], Any] = fn
+    if use_cudagraph:
+        graph = torch.cuda.CUDAGraph()
+        # Side stream + capture, standard recipe. fn must be shape-stable.
+        s = torch.cuda.Stream()
+        s.wait_stream(torch.cuda.current_stream())
+        with torch.cuda.stream(s):
+            fn()
+        torch.cuda.current_stream().wait_stream(s)
+        with torch.cuda.graph(graph):
+            fn()
+        replay = graph.replay
 
     times: list[float] = []
     starter = torch.cuda.Event(enable_timing=True)
     ender = torch.cuda.Event(enable_timing=True)
     for _ in range(iters):
         starter.record()
-        fn()
+        replay()
         ender.record()
         torch.cuda.synchronize()
         times.append(float(starter.elapsed_time(ender)))
@@ -504,13 +569,19 @@ def main(argv: list[str] | None = None) -> int:
         "--backend",
         type=str,
         default="all",
-        help="reference|triton|marlin|all",
+        help="reference|triton|marlin|custom|all (comma-separated ok)",
     )
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--roofline", type=float, default=DEFAULT_ROOFLINE_GBS)
     p.add_argument("--json", type=str, default=None, help="Write results JSON path")
     p.add_argument("--warmup", type=int, default=WARMUP_ITERS)
     p.add_argument("--iters", type=int, default=TIMED_ITERS)
+    p.add_argument(
+        "--cudagraph",
+        action="store_true",
+        help="Capture each backend call in a CUDA graph and time replays — "
+        "matches how serving runs decode (launch overhead hidden).",
+    )
     args = p.parse_args(argv)
 
     if not torch.cuda.is_available():
@@ -523,7 +594,7 @@ def main(argv: list[str] | None = None) -> int:
     m_list = parse_m_list(args.M)
 
     if args.backend == "all":
-        backend_names = ["reference", "triton", "marlin"]
+        backend_names = ["reference", "triton", "marlin", "custom"]
     else:
         backend_names = [b.strip() for b in args.backend.split(",")]
         for b in backend_names:
@@ -648,7 +719,10 @@ def main(argv: list[str] | None = None) -> int:
                 return run_backend_once(_b, _h, weights, _tw, _ti)
 
             try:
-                times = cuda_time_ms(_call, args.warmup, args.iters)
+                use_graph = bool(args.cudagraph) and backend != "reference"
+                times = cuda_time_ms(
+                    _call, args.warmup, args.iters, use_cudagraph=use_graph
+                )
             except Exception as exc:  # noqa: BLE001
                 print(
                     f"{backend:<10} {M:>6} ERROR: {exc}",
