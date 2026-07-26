@@ -76,6 +76,13 @@ With a working DFlash drafter (see below):
 | Marlin + drafter | 34.4 | 72.7 | 121.5 | 22.5 | — |
 | **custom + drafter** | **37.8** | **82.6** | **123.6** | 22.0 | **33.8** |
 
+### Deployed
+
+Running the 5-node cluster this was developed on since 2026-07-26, replacing an
+NVFP4 W4A4 posture. Same container name, port and served-model names, so the
+load balancer, router, systemd units and dashboard needed zero changes — the
+swap was a wrapper edit plus a service restart per node. See `SETUP.md`.
+
 ### The two findings that mattered
 
 1. **"Marlin is 4× too slow" was a misdiagnosis.** The historical 10.8 tok/s
