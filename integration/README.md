@@ -37,6 +37,34 @@ explicit `--moe-backend triton` win. No flag → stock behavior, byte-identical.
 ## 3. (optional) The custom kernel
 
 `kernels/w4a16_moe.py` goes further than the tuned stock kernel (contiguous
-N-tile-major streaming layout + fused SiLU). Wiring it into serving requires a
-custom quant-method class; see the top-level README for status. The microbench
-(`bench/bench_moe.py --backend custom`) is the reference for its numbers.
+N-tile-major streaming layout + fused SiLU). Enable it with:
+
+```bash
+python3 integration/apply.py --custom     # inside the image/venv, once
+export GB10_W4A16_CUSTOM=1
+vllm serve <model> --moe-backend triton …
+```
+
+What `--custom` does:
+
+1. Applies the backend patch from §2 (if not already applied).
+2. Copies `kernels/w4a16_moe.py` → `site-packages/gb10_w4a16_moe.py` (site-packages
+   taken from the installed `vllm` module path).
+3. Patches installed `compressed_tensors_moe_wna16.py` so that with
+   `GB10_W4A16_CUSTOM=1`:
+   - `process_weights_after_loading` repacks post-load w13/w2 into the
+     N-tile-major layout via `gb10_w4a16_moe.repack_weights` (stock 3-D
+     packed qweights are freed to avoid ~2× expert VRAM).
+   - `apply()` routes to `gb10_w4a16_moe.fused_experts_w4a16` with the topk
+     tensors it already has. Env unset or repack absent → stock path.
+
+Leave `GB10_W4A16_CUSTOM=1` for the whole process lifetime when using custom
+(weights are freed after repack). Revert with `python3 integration/apply.py --revert`.
+
+Layout note: post-load weights already match the microbench packs
+`(E, N_out, K_in//2)` — `create_weights` stores transposed int32 and
+`process_weights_after_loading` does the only needed transpose; repack takes
+that form directly.
+
+The microbench (`bench/bench_moe.py --backend custom`) is the reference for
+kernel numbers.
