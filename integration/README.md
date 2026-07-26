@@ -7,10 +7,11 @@ Three pieces, all opt-in:
 Copy (or bind-mount) the tuned config into the installed vLLM:
 
 ```bash
-CFG='E=256,N=1024,device_name=NVIDIA_GB10,dtype=int4_w4a16.json'
-docker run … \
-  -v $PWD/configs/$CFG:/usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers/fused_moe/configs/$CFG:ro \
-  …
+# copy at container start (a per-file -v bind can silently mangle this
+# comma-and-equals-heavy filename; copying from a mounted dir is robust):
+docker run … -v $PWD/configs:/tuned:ro --entrypoint bash <image> -c '
+  cp /tuned/E*.json /usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers/fused_moe/configs/ &&
+  exec vllm serve …'
 ```
 
 Without this the Triton path uses default tile sizes (and, before tuning, the

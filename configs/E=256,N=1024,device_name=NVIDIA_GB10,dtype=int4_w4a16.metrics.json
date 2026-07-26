@@ -1,0 +1,333 @@
+{
+  "device": "NVIDIA GB10",
+  "shapes": {
+    "E": 256,
+    "K": 3072,
+    "N": 1024,
+    "topk": 10,
+    "group": 32,
+    "dtype": "int4_w4a16"
+  },
+  "roofline_GB_s": 273.0,
+  "target_GB_s": 170.0,
+  "seed": 0,
+  "warmup": 2,
+  "iters": 5,
+  "quick": true,
+  "correctness": {
+    "pass": true,
+    "max_abs": 0.0078125,
+    "rel_frob": 0.009763927553997433,
+    "rtol": 0.03
+  },
+  "winners": {
+    "1": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 32,
+        "BLOCK_SIZE_N": 256,
+        "BLOCK_SIZE_K": 32,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 0.4437440037727356,
+      "GB_s": 119.62789254316812,
+      "use_cuda": true,
+      "unique_experts": 10,
+      "weight_bytes": 53084160
+    },
+    "2": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 32,
+        "BLOCK_SIZE_N": 64,
+        "BLOCK_SIZE_K": 128,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 0.8266239762306213,
+      "GB_s": 128.43605200531943,
+      "use_cuda": true,
+      "unique_experts": 20,
+      "weight_bytes": 106168320
+    },
+    "4": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 32,
+        "BLOCK_SIZE_N": 128,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 1.5855679512023926,
+      "GB_s": 127.22243020050242,
+      "use_cuda": true,
+      "unique_experts": 38,
+      "weight_bytes": 201719808
+    },
+    "8": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 16,
+        "BLOCK_SIZE_N": 64,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 3.0732479095458984,
+      "GB_s": 119.18358517784574,
+      "use_cuda": true,
+      "unique_experts": 69,
+      "weight_bytes": 366280704
+    },
+    "16": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 32,
+        "BLOCK_SIZE_N": 128,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 5.292448043823242,
+      "GB_s": 119.35903739995177,
+      "use_cuda": true,
+      "unique_experts": 119,
+      "weight_bytes": 631701504
+    },
+    "24": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 16,
+        "BLOCK_SIZE_N": 64,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 6.814655780792236,
+      "GB_s": 117.62454946870604,
+      "use_cuda": true,
+      "unique_experts": 151,
+      "weight_bytes": 801570816
+    },
+    "32": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 32,
+        "BLOCK_SIZE_N": 128,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 8.316991806030273,
+      "GB_s": 118.0783849381642,
+      "use_cuda": true,
+      "unique_experts": 185,
+      "weight_bytes": 982056960
+    },
+    "48": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 64,
+        "BLOCK_SIZE_N": 256,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 10.222528457641602,
+      "GB_s": 114.76220788830702,
+      "use_cuda": true,
+      "unique_experts": 221,
+      "weight_bytes": 1173159936
+    },
+    "64": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 64,
+        "BLOCK_SIZE_N": 256,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 11.328960418701172,
+      "GB_s": 111.51976538945708,
+      "use_cuda": true,
+      "unique_experts": 238,
+      "weight_bytes": 1263403008
+    },
+    "96": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 64,
+        "BLOCK_SIZE_N": 256,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 12.865344047546387,
+      "GB_s": 103.56601510817046,
+      "use_cuda": true,
+      "unique_experts": 251,
+      "weight_bytes": 1332412416
+    },
+    "128": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 16,
+        "BLOCK_SIZE_N": 128,
+        "BLOCK_SIZE_K": 256,
+        "GROUP_SIZE_M": 1,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "p50_ms": 14.174943923950195,
+      "GB_s": 95.87018497504533,
+      "use_cuda": true,
+      "unique_experts": 256,
+      "weight_bytes": 1358954496
+    },
+    "256": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 32,
+        "BLOCK_SIZE_N": 128,
+        "BLOCK_SIZE_K": 32,
+        "GROUP_SIZE_M": 8,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 4
+      },
+      "p50_ms": 9.69536018371582,
+      "GB_s": 140.165447208705,
+      "use_cuda": false,
+      "unique_experts": 256,
+      "weight_bytes": 1358954496
+    },
+    "512": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 32,
+        "BLOCK_SIZE_N": 128,
+        "BLOCK_SIZE_K": 32,
+        "GROUP_SIZE_M": 8,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 4
+      },
+      "p50_ms": 10.111167907714844,
+      "GB_s": 134.4013380455402,
+      "use_cuda": false,
+      "unique_experts": 256,
+      "weight_bytes": 1358954496
+    },
+    "1024": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 64,
+        "BLOCK_SIZE_N": 64,
+        "BLOCK_SIZE_K": 32,
+        "GROUP_SIZE_M": 8,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 2
+      },
+      "p50_ms": 11.371359825134277,
+      "GB_s": 119.50677112479403,
+      "use_cuda": false,
+      "unique_experts": 256,
+      "weight_bytes": 1358954496
+    },
+    "2048": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 64,
+        "BLOCK_SIZE_N": 64,
+        "BLOCK_SIZE_K": 32,
+        "GROUP_SIZE_M": 8,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 2
+      },
+      "p50_ms": 19.088191986083984,
+      "GB_s": 71.19346331966533,
+      "use_cuda": false,
+      "unique_experts": 256,
+      "weight_bytes": 1358954496
+    },
+    "4096": {
+      "status": "ok",
+      "config": {
+        "BLOCK_SIZE_M": 64,
+        "BLOCK_SIZE_N": 64,
+        "BLOCK_SIZE_K": 32,
+        "GROUP_SIZE_M": 8,
+        "SPLIT_K": 1,
+        "num_warps": 4,
+        "num_stages": 2
+      },
+      "p50_ms": 29.612895965576172,
+      "GB_s": 45.89063148635417,
+      "use_cuda": false,
+      "unique_experts": 256,
+      "weight_bytes": 1358954496
+    }
+  },
+  "invalid_counts": {
+    "1": 0,
+    "2": 0,
+    "4": 0,
+    "8": 0,
+    "16": 0,
+    "24": 0,
+    "32": 0,
+    "48": 0,
+    "64": 0,
+    "96": 0,
+    "128": 0,
+    "256": 60,
+    "512": 48,
+    "1024": 48,
+    "2048": 48,
+    "4096": 48
+  },
+  "trial_counts": {
+    "1": 48,
+    "2": 48,
+    "4": 48,
+    "8": 48,
+    "16": 32,
+    "24": 48,
+    "32": 48,
+    "48": 48,
+    "64": 48,
+    "96": 48,
+    "128": 48,
+    "256": 576,
+    "512": 384,
+    "1024": 384,
+    "2048": 384,
+    "4096": 384
+  }
+}
