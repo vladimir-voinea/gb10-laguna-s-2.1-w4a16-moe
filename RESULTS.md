@@ -83,7 +83,24 @@ bench, drafter on:
 Every figure is within (or above) run-to-run variance: decode is
 bandwidth-bound, so the SM clock ceiling never binds there — only prefill
 pays for clocks, and prefill is precisely the phase that overheats the
-package. 2200 is therefore the recommended serving lock for sustained
+package.
+
+**The prefill tax, measured** (same node, engine restarted fresh under each
+lock, identical warmup, 75 s of unique ~4.6K-token prompts at c6 with
+`max_tokens=16` — near-pure prefill):
+
+| lock | sustained prefill | peak GPU / power during burst |
+|---|---|---|
+| 2400 MHz | 1,718 tok/s | 85 °C / 94 W (throttle already shaving: clocks dipped to 2288) |
+| 2200 MHz | 1,432 tok/s | 83 °C / 80 W, clocks steady |
+
+That is a **~17% prefill cost** — notably more than the 8% the clock ratio
+alone predicts, so the graphics lock appears to drag other domains (uncore/
+boost) with it on this platform. The trade in practice: prefill is the only
+phase that pays, decode is free, and the 2400-lock burst was already
+brushing the throttle at 94 W from a cold start — sustained 2400 prefill is
+exactly the profile that produced the hard SoC shutdown. Single 75 s run
+per point; treat as ±5%. 2200 is therefore the recommended serving lock for sustained
 mixed traffic on this platform unless your ambient is generously cooled.
 If you serve heavy-prefill workloads on a GB10, watch the ACPI package
 zones (`/sys/class/thermal`), not `nvidia-smi`'s GPU temperature — the
