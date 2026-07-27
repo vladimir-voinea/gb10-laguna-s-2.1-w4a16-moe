@@ -43,6 +43,10 @@ achieved weight-bandwidth so progress is judged against the roofline, not vibes.
 
 ## Results
 
+Full dated log of every measured configuration — including sustained-prefill
+throughput, the thermal envelope, and the 2400 vs 2200 MHz clock-lock
+comparison — in **[RESULTS.md](RESULTS.md)**. Highlights:
+
 GB10 (DGX Spark, sm_121a, ~273 GB/s LPDDR5X), 117B-class MoE (256 experts,
 top-10, 3072 hidden / 1024 intermediate), int4 group-32 symmetric experts,
 bf16 everything else. All numbers measured on real hardware.
