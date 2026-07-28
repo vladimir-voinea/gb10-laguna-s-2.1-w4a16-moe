@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Serve Laguna-S-2.1-INT4 on a GB10 exactly as the 5-node production pool
-# does — same flags, same generation config, same parsers. Override any
-# UPPERCASE var via the environment.
+# Serve Laguna-S-2.1-INT4 on a GB10 exactly as we run it in production —
+# same flags, same generation config, same parsers. Override any UPPERCASE
+# var via the environment.
 #
 #   ./serve.sh                          # after: docker build -t vllm-laguna-w4a16:v0.2 .
 #   MODEL_DIR=/data/int4 PORT=8001 ./serve.sh

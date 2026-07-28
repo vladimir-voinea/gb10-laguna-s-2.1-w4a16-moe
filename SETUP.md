@@ -90,8 +90,7 @@ python3 bench/e2e_tps.py --url http://localhost:8000/v1 --model laguna-w4a16 \
 ```
 
 Expected on a GB10 (single stream, 800-token decode): **~35–40 tok/s coding,
-~22 tok/s prose**; c8 aggregate ~120 tok/s single-node (~210 across a 5-node
-pool). Also check capacity — `Model loading took` should equal your checkpoint
+~22 tok/s prose**; c8 aggregate ~120 tok/s. Also check capacity — `Model loading took` should equal your checkpoint
 plus the draft (~69.7 GiB for this pair). If it is several GiB higher you are
 on v0.1, which keeps the stock scales alongside the repacked ones. If you see ~19 spec-off-level
 numbers, check #2 (drafter). If you see ~11, the drafter is accepting 0% —
@@ -108,24 +107,3 @@ wrong draft/target pairing.
 | docker `-v` of a single config json mounts a mangled filename | copy from a mounted dir instead (or use this image, which bakes them) |
 
 
-## Cluster deployment notes (from a real 5-node rollout)
-
-Things that bit us, so they don't bite you:
-
-- **Build the image per node.** `docker save`/`load` of a 19.8 GB image over
-  1 GbE is slower than rebuilding from the base each node (~40 s with a warm
-  base layer). The Dockerfile is deterministic; per-node builds are fine.
-- **Keep the container name, port and served-model names identical** to the
-  posture you are replacing. Load balancers, proxies, systemd units and
-  dashboards then need zero changes — the swap is a wrapper edit plus a
-  service restart.
-- **NFS holders**: the INT4 tree is ~67 GB. Export it read-only from the
-  holder and mount with `x-systemd.automount`; after adding the fstab line run
-  `systemctl daemon-reload` **and** `mount <path>` once, or the first engine
-  start bind-mounts an empty trigger directory.
-- **Verify by log line, not by "it started"**: `Using CompressedTensorsWNA16MoEMethod`
-  means the fast path; `...MarlinMoEMethod` means the flag did not take.
-- **Verify the drafter separately**: `spec_decode_num_accepted_tokens_total`
-  must be ~2.2× `num_drafts_total`. Zero accepted still serves — at half speed.
-- Roll node by node and keep the previous wrapper on disk; rollback is then a
-  wrapper swap and a restart, not a re-download.

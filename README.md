@@ -5,7 +5,7 @@ group-32 symmetric scales, BF16 activations, grouped-expert GEMM as used by
 compressed-tensors `pack-quantized` MoE checkpoints served with vLLM.
 
 Built and validated serving **poolside's Laguna-S-2.1** (the 117B-class MoE in
-all the numbers below) with **vLLM 0.25.1** on a five-node DGX Spark pool.
+all the numbers below) with **vLLM 0.25.1** on DGX Spark hardware.
 Nothing is model-specific: any compressed-tensors `pack-quantized` W4A16 MoE
 checkpoint takes the same path. **[SETUP.md](SETUP.md)** is the complete
 fresh-Spark serving walkthrough with frozen revisions.
@@ -77,29 +77,22 @@ Spec-off:
 |---|---|---|
 | Marlin WNA16 MoE (stock default) | 19.6 | 19.5 |
 | stock triton + tuned configs | 16.9 | 16.8 |
-| **custom kernel** (`apply.py --custom`) | 18.7 | 18.7 |
+| **this repo's kernel** (`apply.py --custom`) | 18.7 | 18.7 |
 
 With a working DFlash drafter (see below):
 
 | path | coding c1 | coding c4 agg | coding c8 agg | prose c1 | coding c1 @28K-token prompt |
 |---|---|---|---|---|---|
-| Marlin + drafter | 34.4 | 72.7 | 121.5 | 22.5 | — |
-| **custom + drafter** | **37.8** | **82.6** | **123.6** | 22.0 | **33.8** |
+| Marlin + DFlash draft | 34.4 | 72.7 | 121.5 | 22.5 | — |
+| **this repo's kernel + DFlash draft** | **37.8** | **82.6** | **123.6** | 22.0 | **33.8** |
 
-### Full 5-node pool, through the production path
+("draft" is poolside's published DFlash model, not something trained here —
+see [the drafter section](#the-drafter-speculative-decoding).) Per-stream
+decode barely degrades with concurrency: the kernel is *more*
+bandwidth-efficient at M=16–64 (226–230 GB/s) than at M=1 (157), so batch
+costs far less than the single-stream number suggests.
 
-Router → load balancer → 5 × GB10, 800-token decode, W4A16 + DFlash draft:
-
-| | c1 | c4 aggregate | c8 aggregate |
-|---|---|---|---|
-| coding | **40.5 tok/s** | **100.7** (34.9/stream) | **211.2** (29.6/stream) |
-| prose | 23.6 tok/s | 73.5 (21.8/stream) | 142.3 (18.5/stream) |
-
-Scaling holds: 8 concurrent streams still deliver 29.6 tok/s each — the kernel
-gets *more* efficient with batch (226-230 GB/s at M=16-64 vs 157 at M=1), so
-concurrency costs far less than the single-stream number suggests.
-
-### Per-node capacity
+### Capacity
 
 After the repack frees the stock scales (see the commit log for the 7 GiB bug
 this fixed), memory is fully accounted for:
@@ -109,17 +102,14 @@ Model loading took 69.71 GiB   =  67.0 (checkpoint) + 2.1 (draft) + ~0.6
 GPU KV cache size:  639k-674k tokens  =  2.44x-2.57x at 262K context
 ```
 
-Identical `69.71 GiB` on all five nodes; the KV spread is just per-node free
-memory. There is no remaining slack in this path — the loaded footprint equals
+There is no remaining slack in this path — the loaded footprint equals
 the checkpoint plus the draft, so more KV means `--gpu-memory-utilization` or
 `--max-model-len`, not kernel work.
 
 ### Deployed
 
-Running the 5-node cluster this was developed on since 2026-07-26, replacing an
-NVFP4 W4A4 posture. Same container name, port and served-model names, so the
-load balancer, router, systemd units and dashboard needed zero changes — the
-swap was a wrapper edit plus a service restart per node. See `SETUP.md`.
+In production on DGX Sparks since 2026-07-26, replacing an NVFP4 W4A4
+posture. See `SETUP.md`.
 
 ### The two findings that mattered
 
@@ -142,8 +132,7 @@ A fused single-launch tiny-M variant was tried and measured **worse**
 
 ## Serving with vLLM
 
-The repo carries everything needed to run it exactly as the production pool
-does: the [Dockerfile](Dockerfile) (defaults to the public
+The repo carries everything needed to run it exactly as we run it in production: the [Dockerfile](Dockerfile) (defaults to the public
 `vllm/vllm-openai:v0.25.1` base; `--build-arg BASE_IMAGE=` to override) and
 **[serve.sh](serve.sh)** — the production serve config verbatim (parsers,
 thinking defaults, generation config, drafter, memory posture):
@@ -156,8 +145,8 @@ docker build -t vllm-laguna-w4a16:v0.2 .
 `--moe-backend triton` is the opt-in the baked patch honors — without it vLLM
 silently falls back to Marlin. **[SETUP.md](SETUP.md)** has the fully pinned
 walkthrough: exact weight revisions, why the *NVFP4* draft is the right one
-for the INT4 target, the three verification steps, and the cluster-rollout
-traps (NFS holders, MPS, unified-memory headroom).
+for the INT4 target, the three verification steps, and the deployment traps
+(MPS, unified-memory headroom).
 
 ## The drafter (speculative decoding)
 

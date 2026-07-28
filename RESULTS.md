@@ -32,41 +32,29 @@ end-to-end. Failure modes worth recognizing: ~19 tok/s c1 means the drafter
 is off; ~11 tok/s means it accepts 0% (wrong draft/target pairing) and the
 wasted draft work is halving throughput.
 
-## Five-node pool, production path (2026-07-26, router → LB → 5 × GB10)
-
-| | c1 | c4 aggregate | c8 aggregate |
-|---|---|---|---|
-| coding | 40.5 | 100.7 (34.9/stream) | 211.2 (29.6/stream) |
-| prose | 23.6 | 73.5 (21.8/stream) | 142.3 (18.5/stream) |
-
-Per-stream decode barely degrades with concurrency: the kernel is *more*
-bandwidth-efficient at M=16–64 (226–230 GB/s) than at M=1 (157), so batch
-costs far less than the single-stream number suggests.
-
 ## Sustained prefill under thermal cap (2026-07-27, 2200 MHz lock)
 
-Stress posture: 4 nodes simultaneously, 9 minutes each, 6 concurrent
-streams per node, every request a unique ~4.6K-token prompt (unique prefix,
-so zero prefix-cache reuse — every token is real prefill work) plus a
-200-token decode.
+Stress posture: 9 minutes, 6 concurrent streams, every request a unique
+~4.6K-token prompt (unique prefix, so zero prefix-cache reuse — every token
+is real prefill work) plus a 200-token decode.
 
-| | per node | 4-node aggregate |
-|---|---|---|
-| sustained prefill | **~930 tok/s** | ~3,700 tok/s |
-| decode alongside | ~40 tok/s | ~160 tok/s |
-| requests / errors | 108–110 / **0** | 436 / **0** |
+| | single GB10 |
+|---|---|
+| sustained prefill | **~930 tok/s** |
+| decode alongside | ~40 tok/s |
+| requests / errors | 110 / **0** |
 
 Thermal context, measured at 10 s resolution during the run: SoC package
 zones 92–96 °C (the firmware shutdown trip is a few degrees above), GPU
-power 80–89 W per node, software thermal throttle engaging intermittently.
-Zero request errors while riding the limiter for 9 minutes, and package
-temps recovered 85 °C → 70 °C within 20 s of load end on every node.
+power 80–89 W, software thermal throttle engaging intermittently. Zero
+request errors while riding the limiter for 9 minutes, and package temps
+recovered 85 °C → 70 °C within 20 s of load end.
 
 ### Why the 2200 MHz lock
 
 Prefill is the burn phase on GB10: compute-bound dense GEMM at ~2× the
 decode power draw (decode c6 sits near ~50 W; prefill pushes 80–90 W).
-Under a 2400 MHz lock in warm ambient, one node's package zones ran away
+Under a 2400 MHz lock in warm ambient the package zones can run away
 (96 °C, hard SoC shutdown — silent below the OS); at 2200 MHz + SW
 throttle the same load shape rode 92–96 °C stably with zero errors.
 
