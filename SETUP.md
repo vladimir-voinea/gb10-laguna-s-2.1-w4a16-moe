@@ -28,7 +28,7 @@ hf download poolside/Laguna-S-2.1-DFlash-NVFP4 \
 ## 2. Build the image
 
 ```bash
-git clone <this-repo> && cd gb10-w4a16-moe && git checkout v0.2
+git clone <this-repo> && cd gb10-laguna-s-2.1-w4a16-moe && git checkout v0.2
 docker build -t vllm-laguna-w4a16:v0.2 \
   --build-arg BASE_IMAGE=<your vllm 0.25.1 image> .
 ```
@@ -39,6 +39,10 @@ the patch anchors don't match your vLLM — that is deliberate (version drift
 guard).
 
 ## 3. Serve
+
+`./serve.sh` in the repo root is this command, parameterized — the exact
+production configuration (parsers, thinking defaults, generation config).
+The expanded form:
 
 ```bash
 docker run -d --name laguna-w4a16 --gpus all --ipc=host --shm-size 16g \

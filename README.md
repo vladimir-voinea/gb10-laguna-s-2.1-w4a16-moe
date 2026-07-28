@@ -1,4 +1,4 @@
-# gb10-w4a16-moe
+# gb10-laguna-s-2.1-w4a16-moe
 
 Fast **W4A16 MoE kernels for NVIDIA GB10 (DGX Spark, sm_121a)** — INT4 weights,
 group-32 symmetric scales, BF16 activations, grouped-expert GEMM as used by
@@ -142,18 +142,15 @@ A fused single-launch tiny-M variant was tried and measured **worse**
 
 ## Serving with vLLM
 
-The short version — build the patched image and serve:
+The repo carries everything needed to run it exactly as the production pool
+does: the [Dockerfile](Dockerfile) (defaults to the public
+`vllm/vllm-openai:v0.25.1` base; `--build-arg BASE_IMAGE=` to override) and
+**[serve.sh](serve.sh)** — the production serve config verbatim (parsers,
+thinking defaults, generation config, drafter, memory posture):
 
 ```bash
-docker build -t vllm-laguna-w4a16:v0.2 --build-arg BASE_IMAGE=<your vllm 0.25.1 image> .
-docker run -d --name laguna-w4a16 --gpus all --ipc=host --shm-size 16g -p 8000:8000 \
-  -v ~/models/Laguna-S-2.1-INT4:/model:ro \
-  -v ~/models/Laguna-S-2.1-DFlash-NVFP4:/dflash:ro \
-  vllm-laguna-w4a16:v0.2 \
-  --model /model --served-model-name laguna-w4a16 --host 0.0.0.0 --port 8000 \
-  --gpu-memory-utilization 0.80 --max-model-len 262144 --max-num-seqs 32 \
-  --moe-backend triton \
-  --speculative-config '{"model":"/dflash","num_speculative_tokens":7,"method":"dflash"}'
+docker build -t vllm-laguna-w4a16:v0.2 .
+./serve.sh
 ```
 
 `--moe-backend triton` is the opt-in the baked patch honors — without it vLLM
