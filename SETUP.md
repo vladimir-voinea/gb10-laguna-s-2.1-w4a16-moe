@@ -28,8 +28,8 @@ hf download poolside/Laguna-S-2.1-DFlash-NVFP4 \
 ## 2. Build the image
 
 ```bash
-git clone <this-repo> && cd gb10-w4a16-moe && git checkout v0.1
-docker build -t vllm-laguna-w4a16:v0.1 \
+git clone <this-repo> && cd gb10-w4a16-moe && git checkout v0.2
+docker build -t vllm-laguna-w4a16:v0.2 \
   --build-arg BASE_IMAGE=<your vllm 0.25.1 image> .
 ```
 
@@ -45,7 +45,7 @@ docker run -d --name laguna-w4a16 --gpus all --ipc=host --shm-size 16g \
   -p 8000:8000 \
   -v ~/models/Laguna-S-2.1-INT4:/model:ro \
   -v ~/models/Laguna-S-2.1-DFlash-NVFP4:/dflash:ro \
-  vllm-laguna-w4a16:v0.1 \
+  vllm-laguna-w4a16:v0.2 \
   --model /model --served-model-name laguna-w4a16 \
   --host 0.0.0.0 --port 8000 \
   --gpu-memory-utilization 0.85 --max-model-len 262144 --max-num-seqs 32 \
@@ -61,6 +61,14 @@ Notes that matter:
 - If you run under Tegra-MPS, add your MPS mounts and keep
   `VLLM_USE_FLASHINFER_SAMPLER=0` — FlashInfer sampling deadlocks under MPS
   on GB10.
+- **GPU memory IS system memory on GB10.** Concurrent long prefills can
+  spike allocations past the `--gpu-memory-utilization` reservation, and the
+  failure mode is not a clean CUDA OOM — it drains the whole box to zero and
+  livelocks it (kernel `NV_ERR_NO_MEMORY`, then nothing answers until a
+  power cycle). Leave headroom (0.80 is what we run), and if you use
+  earlyoom, trigger it on memory alone (`-s 100,100`): GPU-pinned pages
+  never swap, so a swap-gated config will watch the box die at 0.00% free
+  with swap untouched.
 
 ## 4. Verify (all three, in order)
 
