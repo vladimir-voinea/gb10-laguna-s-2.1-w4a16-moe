@@ -159,6 +159,36 @@ walkthrough: exact weight revisions, why the *NVFP4* draft is the right one
 for the INT4 target, the three verification steps, and the cluster-rollout
 traps (NFS holders, MPS, unified-memory headroom).
 
+## The drafter (speculative decoding)
+
+We did **not** train a draft model — poolside publishes DFlash drafts for
+Laguna, and the work here was finding the pairing that actually works and
+proving it. Details:
+
+- **Use `poolside/Laguna-S-2.1-DFlash-NVFP4`** (~2.1 GB; exact revision in
+  [SETUP.md](SETUP.md)) — yes, the NVFP4-quantized draft against the INT4
+  target. Drafts pair by the **BF16 base weights they were trained
+  against**, not by quantization format. The `DFlash-INT4` repo draft is
+  built on an older base snapshot and accepts **0%** against the current
+  INT4 target — it still "serves", at roughly half speed, because every
+  drafted window is wasted work.
+- Config: vLLM `--speculative-config '{"model":"/dflash",
+  "num_speculative_tokens":7,"method":"dflash"}'` (already in `serve.sh`).
+  `--max-num-seqs` must stay ≤ 32 — the drafter crashes vLLM at the
+  default 256.
+- Measured value: **2.25 accepted tokens per 7-token window** against the
+  INT4 target → ~1.8–2× end-to-end (18.7 → 37.8 tok/s coding c1).
+- Verify it's actually working — a dead pairing is silent:
+
+  ```bash
+  curl -s localhost:8000/metrics | grep -E "spec_decode_num_(drafts|accepted_tokens)_total"
+  # accepted_tokens_total must run ~2.2x drafts_total; ~0x means wrong draft
+  ```
+
+The general lesson (it reproduced across FP8 and INT4 targets): whenever the
+target's weights are re-quantized or refreshed upstream, re-check acceptance —
+a draft trained on a different base snapshot fails silently to ~0%.
+
 ## Running the microbench
 
 ```bash
