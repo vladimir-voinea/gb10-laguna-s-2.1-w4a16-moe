@@ -14,10 +14,13 @@ MODEL_DIR="${MODEL_DIR:-$HOME/models/Laguna-S-2.1-INT4}"
 DFLASH_DIR="${DFLASH_DIR:-$HOME/models/Laguna-S-2.1-DFlash-NVFP4}"
 SERVED_NAME="${SERVED_NAME:-laguna-s-2.1}"
 
-# GB10 memory is UNIFIED — the GPU pool is system RAM. 0.80 leaves ~19 GB of
-# headroom; concurrent long prefills can spike past the reservation, and the
-# failure mode is the whole box livelocking, not a clean CUDA OOM. Don't get
-# greedy here (see RESULTS.md).
+# GB10 memory is UNIFIED — the GPU pool is system RAM, so anything the engine
+# takes comes out of the machine. Note --gpu-memory-utilization does NOT cap
+# the process; it only sizes the KV cache (vLLM never calls
+# set_per_process_memory_fraction). The caching allocator then grows several
+# GiB past this number and holds it for the process lifetime. See the
+# "unified memory" section of RESULTS.md — and keep MNBT at 4096, which is
+# what actually bounds that growth.
 UTIL="${UTIL:-0.80}"
 CTX="${CTX:-262144}"
 SEQS="${SEQS:-32}"          # DFlash crashes vLLM at the default 256
@@ -41,7 +44,7 @@ docker run -d --name "$NAME" --restart no --gpus all --ipc=host --shm-size 16g \
   "$IMAGE" \
   --model /model --served-model-name "$SERVED_NAME" --host 0.0.0.0 --port 8000 \
   --trust-remote-code \
-  --enable-prefix-caching --max-num-batched-tokens 8192 \
+  --enable-prefix-caching --max-num-batched-tokens "${MNBT:-4096}" \
   --no-async-scheduling \
   --default-chat-template-kwargs '{"enable_thinking": true, "preserve_thinking": true}' \
   --override-generation-config "$GENCFG" \
