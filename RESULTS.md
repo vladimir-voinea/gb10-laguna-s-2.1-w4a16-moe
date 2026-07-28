@@ -291,11 +291,23 @@ Measured and rejected, so you don't repeat them:
 | `PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.8` | **worse** — 0.6 GiB higher than stock |
 | `--gpu-memory-utilization 0.75` | 2.2 GiB of headroom for **28% of the KV cache** (360,271 tok, 1.37x) — bad trade |
 
-### If you need a hard guarantee
+### If you need a hard guarantee (and what it actually costs)
 
 Everything above is budgeting: the footprint is predictable, so leave room for
-it. If you must *guarantee* the engine cannot take the machine down (unattended
-boxes, or a node shared with other containers), the missing piece is a real
-cap. `integration/` documents a five-line, env-gated patch adding the
-`set_per_process_memory_fraction` call vLLM omits, which converts an overshoot
-into a failed request instead of a livelocked host.
+it. If you must *guarantee* the engine cannot take the machine down — an
+unattended box, or one shared with other containers — the missing piece is a
+real cap. `integration/README.md` documents a five-line, env-gated patch that
+adds the `set_per_process_memory_fraction` call vLLM omits.
+
+Measured at `frac=0.82` with the same burst protocol, and the result is worth
+being precise about: the cap **held** and the host was never endangered (free
+memory returned to 119.6 GiB), but hitting it did **not** degrade gracefully —
+the CUDA OOM propagated and killed EngineCore, and subsequent requests got
+HTTP 500 until the container was restarted.
+
+So the fence is not a free win and is not the default. It converts *"the box
+livelocks and needs physical power"* into *"the engine dies and needs
+`docker restart`"*. On an unattended machine that is a very good trade; on a
+box you can babysit, prefer the mnbt setting above and leave the fence off.
+Best combination: **mnbt 4096 for the day-to-day footprint, plus a fence set
+high enough (~0.88) that only a pathological burst ever reaches it.**

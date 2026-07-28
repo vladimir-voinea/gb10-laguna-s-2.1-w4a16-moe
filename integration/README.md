@@ -68,3 +68,44 @@ that form directly.
 
 The microbench (`bench/bench_moe.py --backend custom`) is the reference for
 kernel numbers.
+
+
+## 4. (optional) Hard memory fence — GB10 unified memory
+
+`--gpu-memory-utilization` is not a cap. vLLM never calls
+`torch.cuda.set_per_process_memory_fraction`, so the flag only sizes the KV
+cache and the caching allocator is free to grow past it (measured: several GiB,
+see RESULTS.md). On a discrete GPU that is harmless. On GB10 the GPU pool is
+system RAM, so an extreme burst can drain the host and livelock the machine —
+recovery is a physical power cycle.
+
+To make the budget real, insert this into
+`vllm/v1/worker/gpu_worker.py`, in `init_device()`, immediately after:
+
+```python
+            self.device = torch.device(f"cuda:{visible_device_index}")
+            torch.accelerator.set_device_index(self.device)
+```
+
+add:
+
+```python
+            _hard = os.environ.get("VLLM_GPU_MEMORY_FRACTION_HARD")
+            if _hard:
+                torch.cuda.set_per_process_memory_fraction(
+                    float(_hard), self.device.index
+                )
+                logger.info("hard memory fence: %.3f of device memory", float(_hard))
+```
+
+Then serve with e.g. `-e VLLM_GPU_MEMORY_FRACTION_HARD=0.88`. It is inert
+unless that variable is set. Confirm it took effect: the worker logs
+`hard memory fence: 0.880 of device memory` at startup.
+
+**Know the failure mode before enabling it.** Measured at 0.82 (deliberately
+tight): the cap held and the host stayed healthy, but the resulting CUDA OOM
+killed EngineCore rather than failing one request — every subsequent request
+returned HTTP 500 until the container was restarted. Note also that the
+fraction bounds *torch's* allocator only; the CUDA context and any non-torch
+allocations sit outside it, so the process total runs slightly above the
+nominal fence. Set it high enough that normal traffic never reaches it.
