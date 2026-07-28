@@ -4,6 +4,12 @@ Fast **W4A16 MoE kernels for NVIDIA GB10 (DGX Spark, sm_121a)** — INT4 weights
 group-32 symmetric scales, BF16 activations, grouped-expert GEMM as used by
 compressed-tensors `pack-quantized` MoE checkpoints served with vLLM.
 
+Built and validated serving **poolside's Laguna-S-2.1** (the 117B-class MoE in
+all the numbers below) with **vLLM 0.25.1** on a five-node DGX Spark pool.
+Nothing is model-specific: any compressed-tensors `pack-quantized` W4A16 MoE
+checkpoint takes the same path. **[SETUP.md](SETUP.md)** is the complete
+fresh-Spark serving walkthrough with frozen revisions.
+
 ## Why
 
 On GB10, decode for a large MoE is weight-bandwidth-bound (~273 GB/s LPDDR5X).
@@ -134,7 +140,29 @@ bf16 tensor cores; NVFP4's native FP4 path keeps a structural prefill edge).
 A fused single-launch tiny-M variant was tried and measured **worse**
 (2.16 ms vs 0.34 ms at M=1) — the multi-launch structure with graphs wins.
 
-## Running
+## Serving with vLLM
+
+The short version — build the patched image and serve:
+
+```bash
+docker build -t vllm-laguna-w4a16:v0.2 --build-arg BASE_IMAGE=<your vllm 0.25.1 image> .
+docker run -d --name laguna-w4a16 --gpus all --ipc=host --shm-size 16g -p 8000:8000 \
+  -v ~/models/Laguna-S-2.1-INT4:/model:ro \
+  -v ~/models/Laguna-S-2.1-DFlash-NVFP4:/dflash:ro \
+  vllm-laguna-w4a16:v0.2 \
+  --model /model --served-model-name laguna-w4a16 --host 0.0.0.0 --port 8000 \
+  --gpu-memory-utilization 0.80 --max-model-len 262144 --max-num-seqs 32 \
+  --moe-backend triton \
+  --speculative-config '{"model":"/dflash","num_speculative_tokens":7,"method":"dflash"}'
+```
+
+`--moe-backend triton` is the opt-in the baked patch honors — without it vLLM
+silently falls back to Marlin. **[SETUP.md](SETUP.md)** has the fully pinned
+walkthrough: exact weight revisions, why the *NVFP4* draft is the right one
+for the INT4 target, the three verification steps, and the cluster-rollout
+traps (NFS holders, MPS, unified-memory headroom).
+
+## Running the microbench
 
 ```bash
 # on any machine with the vLLM image and a GB10:
